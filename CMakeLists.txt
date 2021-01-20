@@ -5,12 +5,14 @@ set(PROJECT "MatrixCpp")
 project(${PROJECT} VERSION 0.1 DESCRIPTION "Simple matrix API C++/Qt wrapper")
 
 option(BUILD_SHARED_LIBS "Build as a shared library" ON)
+option(BUILD_TESTS "Build tests" ON)
 
 # Qt-specific options
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
+set(CMAKE_CXX_STANDARD 17)
 
 # XXX
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DAPP_NAME=\\\"${PROJECT}\\\"")
@@ -45,3 +47,8 @@ install(TARGETS ${PROJECT}
     LIBRARY       DESTINATION ${CMAKE_INSTALL_DIR}
     PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT}
 )
+
+if (BUILD_TESTS)
+    find_package(Qt5 COMPONENTS Test REQUIRED)
+    add_subdirectory(test)
+endif()
