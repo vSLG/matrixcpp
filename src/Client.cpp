@@ -39,7 +39,8 @@ ResponseFuture Client::get(QString path) {
 ResponseFuture Client::get(QUrl url) {
     QNetworkRequest request(url);
 
-    request.setHeader(QNetworkRequest::UserAgentHeader, "MatrixCpp 0.1");
+    request.setHeader(QNetworkRequest::UserAgentHeader,
+                      APP_NAME " " APP_VERSION);
 
     QNetworkReply *reply = this->m_nam->get(request);
 

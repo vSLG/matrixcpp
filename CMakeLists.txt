@@ -13,9 +13,6 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(CMAKE_CXX_STANDARD 17)
 
-# XXX
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DAPP_NAME=\\\"${PROJECT}\\\"")
-
 find_package(Qt5 COMPONENTS Core Network REQUIRED)
 find_package(Olm REQUIRED)
 
@@ -33,6 +30,8 @@ target_link_libraries(${PROJECT}
     Qt::Network
     Olm::Olm)
 
+target_compile_definitions(${PROJECT} PRIVATE APP_NAME="${PROJECT}" APP_VERSION="${PROJECT_VERSION}")
+
 # Include both <src>/include and <install>/include. These are public headers
 target_include_directories(${PROJECT} PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -40,8 +39,7 @@ target_include_directories(${PROJECT} PUBLIC
 
 # Set version and other relevant properties
 set_target_properties(${PROJECT} PROPERTIES
-    VERSION ${PROJECT_VERSION}
-    PUBLIC_HEADER include/${PROJECT}/Client.hpp)
+    VERSION ${PROJECT_VERSION})
 
 #
 # Installation
@@ -55,7 +53,7 @@ install(TARGETS ${PROJECT}
 install(DIRECTORY include/${PROJECT}
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
-if (BUILD_TESTS)
+if(BUILD_TESTS)
     find_package(Qt5 COMPONENTS Test REQUIRED)
     add_subdirectory(test)
 endif()
