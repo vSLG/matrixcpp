@@ -13,7 +13,6 @@
 
 #include <QObject>
 #include <QUrl>
-#include <qobject.h>
 
 #include "export.hpp"
 
@@ -43,8 +42,6 @@ class PUBLIC Client : public QObject {
     // Public variables
 
     QUrl homeserverUrl;
-
-    static const inline QString apiEndpoints[] = {"/_matrix/client/versions"};
 
   signals:
     void abortRequests();

@@ -9,9 +9,8 @@ option(BUILD_TESTS "Build tests" ON)
 
 # Qt-specific options
 set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTORCC ON)
-
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
+
 set(CMAKE_CXX_STANDARD 17)
 
 # XXX
@@ -20,7 +19,14 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DAPP_NAME=\\\"${PROJECT}\\\"")
 find_package(Qt5 COMPONENTS Core Network REQUIRED)
 find_package(Olm REQUIRED)
 
-add_library(${PROJECT} src/Client.cpp)
+add_library(${PROJECT}
+    src/Client.cpp
+    
+    src/Responses/ResponseFuture.cpp
+    src/Responses/Response.cpp
+    
+    include/${PROJECT}/Client.hpp
+    include/${PROJECT}/Responses.hpp)
 
 target_link_libraries(${PROJECT}
     Qt::Core
@@ -44,9 +50,10 @@ set_target_properties(${PROJECT} PROPERTIES
 include(GNUInstallDirs)
 
 install(TARGETS ${PROJECT}
-    LIBRARY       DESTINATION ${CMAKE_INSTALL_DIR}
-    PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_DIR}
 )
+install(DIRECTORY include/${PROJECT}
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
 if (BUILD_TESTS)
     find_package(Qt5 COMPONENTS Test REQUIRED)

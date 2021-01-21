@@ -14,9 +14,9 @@
 #include <QNetworkRequest>
 
 #include <MatrixCpp/Client.hpp>
-#include <qnetworkreply.h>
+#include <MatrixCpp/Responses.hpp>
 #include <qnetworkrequest.h>
-#include <qobject.h>
+#include <qurl.h>
 
 using namespace MatrixCpp;
 
@@ -29,11 +29,15 @@ struct Client::Privates {
     Client *               client;
     QNetworkAccessManager *m_nam;
 
-    QNetworkReply *get(QString url) {
-        return this->get(QUrl(url));
+    Responses::ResponseFuture get(QString path) {
+        QUrl requestUrl = client->homeserverUrl;
+        requestUrl.setPath(path);
+
+        qDebug() << "Getting" << requestUrl;
+        return this->get(requestUrl);
     }
 
-    QNetworkReply *get(QUrl url) {
+    Responses::ResponseFuture get(QUrl url) {
         QNetworkRequest request(url);
 
         request.setHeader(QNetworkRequest::UserAgentHeader, "MatrixCpp 0.1");
@@ -43,14 +47,15 @@ struct Client::Privates {
         QObject::connect(
             this->client, SIGNAL(abortRequests()), reply, SLOT(abort()));
 
-        return reply;
+        return Responses::ResponseFuture(reply);
     }
 };
 
 // Public definitions
 
 Client::Client(const QUrl &homeserverUrl, QObject *parent)
-    : QObject(parent), m_private(new Privates), homeserverUrl(homeserverUrl) {
+    : QObject(parent), m_private(new Privates(this)),
+      homeserverUrl(homeserverUrl) {
     m_private->m_nam = new QNetworkAccessManager(this);
 }
 
