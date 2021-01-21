@@ -22,9 +22,18 @@ using namespace MatrixCpp::Responses;
 // Public definitions
 
 Client::Client(const QUrl &homeserverUrl, QObject *parent)
-    : QObject(parent), homeserverUrl(homeserverUrl) {
+    : Client(homeserverUrl.host()) {
     this->m_nam = new QNetworkAccessManager(this);
 }
+
+Client::Client(const QString &host, QObject *parent) : QObject(parent) {
+    this->homeserverUrl = QUrl();
+    this->homeserverUrl.setHost(host);
+    this->homeserverUrl.setScheme("https"); // Always use https?
+    this->m_nam = new QNetworkAccessManager(this);
+}
+
+// Api routines
 
 ResponseFuture Client::getServerVersion() {
     return this->get("/_matrix/client/versions");

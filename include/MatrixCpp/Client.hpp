@@ -26,6 +26,14 @@ class PUBLIC Client : public QObject {
     /**
      * @brief Construct a new Client object
      *
+     * @param host Homeserver host
+     * @param parent QObject parent, if any
+     */
+    explicit Client(const QString &host, QObject *parent = nullptr);
+
+    /**
+     * @brief Construct a new Client object
+     *
      * @param homeserver Homeserver URL for this client
      * @param parent QObject parent, if any
      */

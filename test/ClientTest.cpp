@@ -12,7 +12,7 @@ class ClientTest : public QObject {
 
   private slots:
     void initTestCase() {
-        client = new Client(QUrl("https://matrix.org"));
+        client = new Client("matrix.org");
     }
 
     void serverVersion() {
