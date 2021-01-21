@@ -18,14 +18,20 @@ using namespace MatrixCpp::Responses;
 // Public functions
 
 Response::Response(QByteArray rawResponse) {
+    if (rawResponse.isEmpty()) {
+        qCritical() << "Response: Response string is empty";
+        this->m_broken = this->m_deepBroken = true;
+        return;
+    }
+
     // First parse JSON
     QJsonParseError error;
     QJsonDocument   doc = QJsonDocument::fromJson(rawResponse, &error);
 
     if (error.error) {
-        qCritical() << "Failed to parse JSON response:"
+        qCritical() << "Response: Failed to parse JSON response:"
                     << error.errorString().toStdString().c_str();
-        this->m_broken = true;
+        this->m_broken = this->m_deepBroken = true;
         return;
     }
 
@@ -37,7 +43,8 @@ Response::Response(QVariant data) {
 }
 
 Response::Response(const Response &other) {
-    this->data = other.data;
+    this->data         = other.data;
+    this->m_deepBroken = other.m_deepBroken;
 }
 
 void Response::parseData() {
@@ -51,5 +58,5 @@ QByteArray Response::getJson() const {
 }
 
 bool Response::isBroken() const {
-    return this->m_broken;
+    return this->m_broken || this->m_deepBroken;
 }

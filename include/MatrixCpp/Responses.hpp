@@ -31,6 +31,8 @@
         this->parseData();                                 \
     };                                                     \
     type(const Response &other) : Response(other) {        \
+        if (this->m_deepBroken)                            \
+            return;                                        \
         this->parseData();                                 \
     };
 
@@ -91,7 +93,8 @@ class PUBLIC Response {
   protected:
     virtual void parseData();
 
-    bool m_broken = false;
+    bool m_broken     = false;
+    bool m_deepBroken = false;
 };
 
 /**
@@ -130,12 +133,6 @@ class PUBLIC ResponseFuture : public QObject {
      *
      */
     void responseComplete(Response response);
-
-    /**
-     * @brief Is fired when a network error occurs
-     *
-     */
-    void errorOccurred(QString errorString);
 
   private:
     bool       m_finished = false;

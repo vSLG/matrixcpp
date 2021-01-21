@@ -22,10 +22,9 @@ ResponseFuture::ResponseFuture(QNetworkReply *reply) : QObject(nullptr) {
     QObject::connect(reply, &QNetworkReply::finished, [=]() {
         this->m_finished = true;
 
-        if (reply->error()) {
-            emit this->errorOccurred(reply->errorString());
+        if (reply->error())
             this->m_rawResponse = "";
-        } else
+        else
             this->m_rawResponse = reply->readAll();
 
         emit this->responseComplete(this->result());
