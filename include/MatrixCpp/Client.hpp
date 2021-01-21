@@ -11,10 +11,13 @@
 
 #pragma once
 
+#include <QNetworkAccessManager>
 #include <QObject>
 #include <QUrl>
 
 #include "export.hpp"
+#include <MatrixCpp/Responses.hpp>
+#include <qurl.h>
 
 namespace MatrixCpp {
 class PUBLIC Client : public QObject {
@@ -28,8 +31,6 @@ class PUBLIC Client : public QObject {
      * @param parent QObject parent, if any
      */
     explicit Client(const QUrl &homeserverUrl, QObject *parent = nullptr);
-
-    ~Client();
 
     // Enums and structs
 
@@ -47,14 +48,22 @@ class PUBLIC Client : public QObject {
     void abortRequests();
 
   private:
-    // To avoid public header pollution, use plmpl idiom
-    // (https://en.wikipedia.org/wiki/Opaque_pointer)
+    /**
+     * @brief HTTP get request to specified path on homeserver
+     *
+     * @param path
+     * @return Responses::ResponseFuture
+     */
+    Responses::ResponseFuture get(QString path);
 
     /**
-     * @brief Stores MatrixCpp private functions and variables
+     * @brief HTTP get request to specified URL
      *
+     * @param url
+     * @return Responses::ResponseFuture
      */
-    struct Privates;
-    Privates *m_private;
+    Responses::ResponseFuture get(QUrl url);
+
+    QNetworkAccessManager *m_nam;
 };
 } // namespace MatrixCpp
