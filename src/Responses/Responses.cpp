@@ -17,20 +17,22 @@ using namespace MatrixCpp::Responses;
  * VersionsResponse
  */
 void VersionsResponse::parseData() {
+    QVariantMap dataMap = this->data.toMap();
+
     // Start by checking if root data is a Map
-    if ((QMetaType::Type) data.type() != QMetaType::QVariantMap) {
+    if (dataMap.isEmpty()) {
         qCritical() << "VersionsResponse: expected data to be a Map";
         this->m_broken = true;
         return;
     }
 
-    QVariantMap dataMap = data.toMap();
-
     if (dataMap["versions"].isNull()) {
         qCritical() << "VersionsResponse: data does not contain 'versions' key";
         this->m_broken = true;
-    } else
-        this->versions = dataMap["versions"].value<QStringList>();
+        return;
+    }
+
+    this->versions = dataMap["versions"].value<QStringList>();
 
     QVariantMap unstableFeaturesMap = dataMap["unstable_features"].toMap();
 
@@ -39,4 +41,49 @@ void VersionsResponse::parseData() {
         for (; it != unstableFeaturesMap.end(); ++it)
             this->unstableFeatures[it.key()] = it.value().toBool();
     }
+
+    QVariantMap newData;
+    newData["versions"]          = this->versions;
+    newData["unstable_features"] = unstableFeaturesMap;
+    this->data.setValue(newData);
+}
+
+/*
+ * LoginTypesResponse
+ */
+
+void LoginTypesResponse::parseData() {
+    QVariantMap dataMap = this->data.toMap();
+
+    // Start by checking if root data is a Map
+    if (dataMap.isEmpty()) {
+        qCritical() << "LoginTypesResponse: expected data to be a Map";
+        this->m_broken = true;
+        return;
+    }
+
+    if (dataMap["flows"].isNull()) {
+        qCritical() << "LoginTypesResponse: data does not contain 'flows' key";
+        this->m_broken = true;
+        return;
+    }
+
+    QVariantList flows = dataMap["flows"].toList();
+
+    for (QVariant item : flows) {
+        QVariantMap entry = item.toMap();
+
+        if (entry.isEmpty() || entry["type"].isNull())
+            continue;
+
+        QMap<QString, QString> newEntry;
+        newEntry["type"] = entry["type"].toString();
+
+        this->types.append(entry["type"].toString());
+        this->flows.append(newEntry);
+    }
+
+    QVariantMap newData;
+    newData["flows"] = flows;
+    this->data.setValue(newData);
 }

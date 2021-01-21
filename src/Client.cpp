@@ -35,13 +35,17 @@ Client::Client(const QString &host, QObject *parent) : QObject(parent) {
 
 // Api routines
 
-ResponseFuture Client::getServerVersion() {
+ResponseFuture Client::getServerVersion() const {
     return this->get("/_matrix/client/versions");
+}
+
+ResponseFuture Client::getLoginTypes() const {
+    return this->get("/_matrix/client/r0/login");
 }
 
 // Private
 
-ResponseFuture Client::get(QString path) {
+ResponseFuture Client::get(QString path) const {
     QUrl requestUrl = this->homeserverUrl;
     requestUrl.setPath(path);
 
@@ -49,7 +53,7 @@ ResponseFuture Client::get(QString path) {
     return this->get(requestUrl);
 }
 
-ResponseFuture Client::get(QUrl url) {
+ResponseFuture Client::get(QUrl url) const {
     QNetworkRequest request(url);
 
     request.setHeader(QNetworkRequest::UserAgentHeader,

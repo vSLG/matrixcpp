@@ -15,6 +15,25 @@
 
 #include "export.hpp"
 
+/**
+ * @brief Generates basic header for subclasses of Response
+ *
+ */
+#define RESPONSE_CONSTRUCTOR(type)                         \
+  protected:                                               \
+    virtual void parseData() override;                     \
+                                                           \
+  public:                                                  \
+    type(QByteArray rawResponse) : Response(rawResponse) { \
+        this->parseData();                                 \
+    };                                                     \
+    type(QVariant data) : Response(data) {                 \
+        this->parseData();                                 \
+    };                                                     \
+    type(const Response &other) : Response(other) {        \
+        this->parseData();                                 \
+    };
+
 namespace MatrixCpp::Responses {
 
 /**
@@ -125,22 +144,27 @@ class PUBLIC ResponseFuture : public QObject {
 
 class PUBLIC ErrorResponse : public Response {};
 
+/**
+ * @brief Response object for server version
+ *
+ */
 class PUBLIC VersionsResponse : public Response {
-  public:
-    explicit VersionsResponse(QByteArray rawResponse) : Response(rawResponse) {
-        this->parseData();
-    };
-    VersionsResponse(QVariant data) : Response(data) {
-        this->parseData();
-    };
-    VersionsResponse(const Response &other) : Response(other) {
-        this->parseData();
-    };
+    RESPONSE_CONSTRUCTOR(VersionsResponse)
 
+  public:
     QMap<QString, bool> unstableFeatures;
     QStringList         versions;
+};
 
-  protected:
-    virtual void parseData() override;
+/**
+ * @brief Response object for login types
+ *
+ */
+class PUBLIC LoginTypesResponse : public Response {
+    RESPONSE_CONSTRUCTOR(LoginTypesResponse)
+
+  public:
+    QList<QMap<QString, QString>> flows;
+    QStringList                   types;
 };
 } // namespace MatrixCpp::Responses

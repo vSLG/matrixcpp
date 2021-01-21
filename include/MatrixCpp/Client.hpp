@@ -47,12 +47,21 @@ class PUBLIC Client : public QObject {
      */
     enum Presence { PRESENCE_ONLINE, PRESENCE_BUSY, PRESENCE_OFFLINE };
 
+    // API calls
+
     /**
      * @brief Get the Server Version and unstable features
      *
      * @return Responses::ResponseFuture
      */
-    Responses::ResponseFuture getServerVersion();
+    Responses::ResponseFuture getServerVersion() const;
+
+    /**
+     * @brief Get server supported login types
+     *
+     * @return Responses::ResponseFuture
+     */
+    Responses::ResponseFuture getLoginTypes() const;
 
     // Public variables
 
@@ -68,7 +77,7 @@ class PUBLIC Client : public QObject {
      * @param path
      * @return Responses::ResponseFuture
      */
-    Responses::ResponseFuture get(QString path);
+    Responses::ResponseFuture get(QString path) const;
 
     /**
      * @brief HTTP get request to specified URL
@@ -76,7 +85,7 @@ class PUBLIC Client : public QObject {
      * @param url
      * @return Responses::ResponseFuture
      */
-    Responses::ResponseFuture get(QUrl url);
+    Responses::ResponseFuture get(QUrl url) const;
 
     QNetworkAccessManager *m_nam;
 };

@@ -3,6 +3,7 @@
 
 #include <MatrixCpp/Client.hpp>
 #include <qdebug.h>
+#include <qnumeric.h>
 
 using namespace MatrixCpp;
 using namespace MatrixCpp::Responses;
@@ -18,13 +19,25 @@ class ClientTest : public QObject {
     void serverVersion() {
         VersionsResponse response = client->getServerVersion().result();
 
+        if (response.isBroken())
+            QSKIP("Response is broken");
+
         qInfo() << client->homeserverUrl.host()
                 << "versions:" << response.versions;
+
+        QVERIFY(response.versions.size() > 0);
+    }
+
+    void loginTypes() {
+        LoginTypesResponse response = client->getLoginTypes().result();
 
         if (response.isBroken())
             QSKIP("Response is broken");
 
-        QVERIFY(response.versions.size() > 0);
+        qInfo() << "Server login types:" << response.types;
+
+        QVERIFY(response.types.size() > 0);
+        QVERIFY(response.flows.size() > 0);
     }
 
     void cleanupTestCase() {
