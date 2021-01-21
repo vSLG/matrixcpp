@@ -17,7 +17,6 @@
 
 #include "export.hpp"
 #include <MatrixCpp/Responses.hpp>
-#include <qurl.h>
 
 namespace MatrixCpp {
 class PUBLIC Client : public QObject {
@@ -39,6 +38,13 @@ class PUBLIC Client : public QObject {
      *
      */
     enum Presence { PRESENCE_ONLINE, PRESENCE_BUSY, PRESENCE_OFFLINE };
+
+    /**
+     * @brief Get the Server Version and unstable features
+     *
+     * @return Responses::ResponseFuture
+     */
+    Responses::ResponseFuture getServerVersion();
 
     // Public variables
 

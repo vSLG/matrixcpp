@@ -31,12 +31,26 @@ class PUBLIC Response {
     explicit Response(QByteArray rawResponse);
 
     /**
+     * @brief Construct a new Response object
+     *
+     * @param data
+     */
+    Response(QVariant data);
+
+    /**
+     * @brief Construct a new Response object
+     *
+     * @param other
+     */
+    Response(const Response &other);
+
+    /**
      * @brief Tell if Response is broken (e.g. malformed or empty json)
      *
      * @return true
      * @return false
      */
-    bool isBroken();
+    bool isBroken() const;
 
     /**
      * @brief Return response as another type of response
@@ -44,18 +58,20 @@ class PUBLIC Response {
      * @tparam T The desided Response type
      * @return T The new Response
      */
-    template <class T> T as();
+    template <class T> T as() const;
 
     /**
      * @brief Get the JSON-formatted data
      *
      * @return QByteArray
      */
-    QByteArray getJson();
+    QByteArray getJson() const;
 
     QVariant data;
 
-  private:
+  protected:
+    virtual void parseData();
+
     bool m_broken = false;
 };
 
@@ -87,7 +103,7 @@ class PUBLIC ResponseFuture : public QObject {
      * @tparam T The type of Response to return
      * @return T The Response object
      */
-    // template <class T> T getResponse();
+    template <class T> T result();
 
   signals:
     /**
@@ -107,5 +123,24 @@ class PUBLIC ResponseFuture : public QObject {
     QByteArray m_rawResponse;
 };
 
-// class PUBLIC ErrorResponse : public Response {};
+class PUBLIC ErrorResponse : public Response {};
+
+class PUBLIC VersionsResponse : public Response {
+  public:
+    explicit VersionsResponse(QByteArray rawResponse) : Response(rawResponse) {
+        this->parseData();
+    };
+    VersionsResponse(QVariant data) : Response(data) {
+        this->parseData();
+    };
+    VersionsResponse(const Response &other) : Response(other) {
+        this->parseData();
+    };
+
+    QMap<QString, bool> unstableFeatures;
+    QStringList         versions;
+
+  protected:
+    virtual void parseData() override;
+};
 } // namespace MatrixCpp::Responses

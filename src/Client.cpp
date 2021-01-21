@@ -15,8 +15,6 @@
 
 #include <MatrixCpp/Client.hpp>
 #include <MatrixCpp/Responses.hpp>
-#include <qnetworkrequest.h>
-#include <qurl.h>
 
 using namespace MatrixCpp;
 using namespace MatrixCpp::Responses;
@@ -27,6 +25,12 @@ Client::Client(const QUrl &homeserverUrl, QObject *parent)
     : QObject(parent), homeserverUrl(homeserverUrl) {
     this->m_nam = new QNetworkAccessManager(this);
 }
+
+ResponseFuture Client::getServerVersion() {
+    return this->get("/_matrix/client/versions");
+}
+
+// Private
 
 ResponseFuture Client::get(QString path) {
     QUrl requestUrl = this->homeserverUrl;

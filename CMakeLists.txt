@@ -20,7 +20,8 @@ add_library(${PROJECT}
     src/Client.cpp
     
     src/Responses/ResponseFuture.cpp
-    src/Responses/Response.cpp
+    src/Responses/BaseResponse.cpp
+    src/Responses/Responses.cpp
     
     include/${PROJECT}/Client.hpp
     include/${PROJECT}/Responses.hpp)

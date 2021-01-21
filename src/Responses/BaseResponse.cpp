@@ -12,7 +12,6 @@
 #include <QJsonDocument>
 
 #include <MatrixCpp/Responses.hpp>
-#include <qjsondocument.h>
 
 using namespace MatrixCpp::Responses;
 
@@ -33,7 +32,24 @@ Response::Response(QByteArray rawResponse) {
     this->data = doc.toVariant();
 }
 
-QByteArray Response::getJson() {
+Response::Response(QVariant data) {
+    this->data = data;
+}
+
+Response::Response(const Response &other) {
+    this->data = other.data;
+}
+
+void Response::parseData() {
+    // Simply return. Subclasses must override this function
+    return;
+}
+
+QByteArray Response::getJson() const {
     QJsonDocument doc = QJsonDocument::fromVariant(this->data);
     return doc.toJson();
+}
+
+bool Response::isBroken() const {
+    return this->m_broken;
 }
