@@ -27,23 +27,44 @@ class PUBLIC Client : public QObject {
      * @brief Construct a new Client object
      *
      * @param host Homeserver host
+     * @param user Fully qualified or local user_id for this Client
+     * @param deviceId device_id to use with this Client
      * @param parent QObject parent, if any
      */
-    explicit Client(const QString &host, QObject *parent = nullptr);
+    explicit Client(const QString &host,
+                    const QString &user,
+                    const QString &deviceId = "",
+                    QObject *      parent   = nullptr);
 
     /**
      * @brief Construct a new Client object
      *
      * @param homeserverUrl Homeserver URL for this client
+     * @param user Fully qualified or local user_id for this Client
+     * @param deviceId device_id to use with this Client
      * @param parent QObject parent, if any
      */
-    explicit Client(const QUrl &homeserverUrl, QObject *parent = nullptr);
+    explicit Client(const QUrl &   homeserverUrl,
+                    const QString &user,
+                    const QString &deviceId = "",
+                    QObject *      parent   = nullptr);
 
     /**
      * @brief (sync) Request for well_known and update the client
      *
      */
     void loadDiscovery();
+
+    /**
+     * @brief Load given info to the Client
+     *
+     * @param userId *Fully qualified* user id
+     * @param deviceId A valid and existing device id
+     * @param accessToken The access token for this account
+     */
+    void restore(const QString &userId,
+                 const QString &deviceId,
+                 const QString &accessToken);
 
     // Enums and structs
 
@@ -78,15 +99,15 @@ class PUBLIC Client : public QObject {
     Responses::ResponseFuture getLoginTypes() const;
 
     /**
-     * @brief (async) Logs in to the specified account with password
+     * @brief (async) Logs in to the specified account with password OR
+     * access_token
      *
-     * @param user User name, can be fully qualified or local userId
      * @param password Password for the user
-     * @param deviceId Optional deviceId
+     * @param accessToken Access token for the user
      * @return Responses::ResponseFuture
      */
-    Responses::ResponseFuture
-    login(QString user, QString password, QString deviceId = "");
+    Responses::ResponseFuture login(QString password    = "",
+                                    QString accessToken = "");
 
     // Getters & setters
 
@@ -117,6 +138,21 @@ class PUBLIC Client : public QObject {
 
   signals:
     void abortRequests();
+
+  protected slots:
+    /**
+     * @brief Sets Client properties properly from login response
+     *
+     * @param response
+     */
+    void onLoginResponse(Responses::LoginResponse response);
+
+    /**
+     * @brief Sets Client properties properly from well known response
+     *
+     * @param response
+     */
+    void onDiscoveryResponse(Responses::WellKnownResponse response);
 
   private:
     /**

@@ -2,8 +2,6 @@
 #include <QtTest/QtTest>
 
 #include <MatrixCpp/Client.hpp>
-#include <qdebug.h>
-#include <qnumeric.h>
 
 using namespace MatrixCpp;
 using namespace MatrixCpp::Responses;
@@ -13,7 +11,7 @@ class ClientTest : public QObject {
 
   private slots:
     void initTestCase() {
-        client = new Client("privacytools.io");
+        client = new Client("matrix.org", "markov-bot");
         client->loadDiscovery();
     }
 
@@ -41,9 +39,8 @@ class ClientTest : public QObject {
         QVERIFY(response.flows.size() > 0);
     }
 
-    void loginAccount() {
-        LoginResponse response =
-            client->login("<enter_user_here>", "<insert_pw_here>").result();
+    void passwordLogin() {
+        LoginResponse response = client->login("<enter_pw_here>").result();
 
         if (response.isBroken())
             QSKIP("Response is broken");

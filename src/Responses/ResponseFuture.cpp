@@ -45,17 +45,10 @@ Response ResponseFuture::result() {
 void ResponseFuture::init(QNetworkReply *reply) {
     this->m_reply = reply;
 
-    QObject::connect(this->m_reply, &QNetworkReply::finished, [=]() {
-        this->m_finished = true;
-
-        // If error is above 99, it is http error. We do not want to ignore
-        // those, since some of them contain matrix structures.
-        if (this->m_reply->error() < 99 && this->m_reply->error() > 0)
-            this->m_rawResponse = "";
-        else
-            this->m_rawResponse = this->m_reply->readAll();
-
-        this->m_reply->deleteLater();
+    QObject::connect(reply, &QNetworkReply::finished, [=]() {
+        this->m_finished    = true;
+        this->m_rawResponse = reply->readAll();
+        reply->deleteLater();
         emit this->responseComplete(this->result());
     });
 }

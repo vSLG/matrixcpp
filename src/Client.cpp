@@ -9,28 +9,32 @@
  *
  */
 
+#include <QException>
+#include <QJsonDocument>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QNetworkRequest>
 
 #include <MatrixCpp/Client.hpp>
 #include <MatrixCpp/Responses.hpp>
-#include <qjsondocument.h>
-#include <qnetworkrequest.h>
-#include <qobject.h>
-#include <qurl.h>
 
 using namespace MatrixCpp;
 using namespace MatrixCpp::Responses;
 
 // Public definitions
 
-Client::Client(const QUrl &homeserverUrl, QObject *parent)
-    : Client(homeserverUrl.host()) {
-    this->m_nam = new QNetworkAccessManager(this);
+Client::Client(const QUrl &   homeserverUrl,
+               const QString &user,
+               const QString &deviceId,
+               QObject *      parent)
+    : Client(homeserverUrl.host(), user, deviceId, parent) {
 }
 
-Client::Client(const QString &host, QObject *parent) : QObject(parent) {
+Client::Client(const QString &host,
+               const QString &user,
+               const QString &deviceId,
+               QObject *      parent)
+    : QObject(parent), m_userId(user), m_deviceId(deviceId) {
     this->homeserverUrl = QUrl();
     this->homeserverUrl.setHost(host);
     this->homeserverUrl.setScheme("https"); // Always use https?
@@ -42,21 +46,23 @@ void Client::loadDiscovery() {
     this->getDiscovery().result();
 }
 
+void Client::restore(const QString &userId,
+                     const QString &deviceId,
+                     const QString &accessToken) {
+    this->m_userId      = userId;
+    this->m_deviceId    = deviceId;
+    this->m_accessToken = accessToken;
+}
+
 // Api routines
 
 ResponseFuture Client::getDiscovery() {
     ResponseFuture future = this->get("/.well-known/matrix/client");
 
-    QObject::connect(&future,
-                     &ResponseFuture::responseComplete,
-                     [&](WellKnownResponse response) {
-                         if (response.isBroken() || response.isError())
-                             return;
-
-                         // Do we really need to check returned homeserver URL?
-                         this->homeserverUrl = response.homeserver;
-                         // TODO: response.identityServer
-                     });
+    QObject::connect(
+        &future, &ResponseFuture::responseComplete, [=](Response response) {
+            this->onDiscoveryResponse(response);
+        });
 
     return future;
 }
@@ -69,38 +75,35 @@ ResponseFuture Client::getLoginTypes() const {
     return this->get("/_matrix/client/r0/login");
 }
 
-ResponseFuture Client::login(QString user, QString password, QString deviceId) {
-    QVariantMap loginData, identifier;
+ResponseFuture Client::login(QString password, QString token) {
+    QVariantMap loginData;
 
-    loginData["type"] = "m.login.password";
+    if (this->m_userId.isEmpty())
+        throw std::runtime_error("");
 
-    identifier["type"] = "m.id.user";
-    identifier["user"] = user;
+    if (!password.isEmpty()) {
+        QVariantMap identifier;
 
-    loginData["identifier"]                  = identifier;
-    loginData["password"]                    = password;
+        identifier["type"] = "m.id.user";
+        identifier["user"] = this->m_userId;
+
+        loginData["type"]       = "m.login.password";
+        loginData["password"]   = password;
+        loginData["identifier"] = identifier;
+    } else if (!token.isEmpty()) {
+        loginData["type"]  = "m.login.token";
+        loginData["token"] = token;
+    } else
+        throw std::runtime_error("Please provide a password or token");
+
     loginData["initial_device_display_name"] = APP_NAME;
-
-    if (!deviceId.isEmpty())
-        loginData["device_id"] = deviceId;
 
     ResponseFuture future = this->send("/_matrix/client/r0/login", loginData);
 
-    QObject::connect(&future,
-                     &ResponseFuture::responseComplete,
-                     [&](LoginResponse response) {
-                         if (response.isBroken() || response.isError())
-                             return;
-
-                         this->m_userId      = response.userId;
-                         this->m_accessToken = response.accessToken;
-                         this->m_deviceId    = response.deviceId;
-
-                         if (!response.homeserver.isEmpty()) {
-                             this->homeserverUrl = response.homeserver;
-                             // TODO: response.identityServer
-                         }
-                     });
+    QObject::connect(
+        &future, &ResponseFuture::responseComplete, [=](Response response) {
+            this->onLoginResponse(response);
+        });
 
     return future;
 }
@@ -117,6 +120,27 @@ QString Client::deviceId() const {
 
 QString Client::accessToken() const {
     return this->m_accessToken;
+}
+
+// Protected slots
+
+void Client::onLoginResponse(LoginResponse response) {
+    if (response.isBroken() || response.isError())
+        return;
+
+    if (this->homeserverUrl != response.homeserver)
+        this->homeserverUrl = response.homeserver;
+
+    this->restore(response.userId, response.deviceId, response.accessToken);
+}
+
+void Client::onDiscoveryResponse(WellKnownResponse response) {
+    if (response.isBroken() || response.isError())
+        return;
+
+    // Do we really need to check returned homeserver URL?
+    this->homeserverUrl = response.homeserver;
+    // TODO: response.identityServer
 }
 
 // Private
