@@ -1,5 +1,5 @@
 /**
- * @file Response.cpp
+ * @file BaseResponse.cpp
  * @author vslg (slgf@protonmail.ch)
  * @brief Implementation of Response class
  * @version 0.1

@@ -34,7 +34,7 @@ class PUBLIC Client : public QObject {
     /**
      * @brief Construct a new Client object
      *
-     * @param homeserver Homeserver URL for this client
+     * @param homeserverUrl Homeserver URL for this client
      * @param parent QObject parent, if any
      */
     explicit Client(const QUrl &homeserverUrl, QObject *parent = nullptr);
@@ -56,28 +56,29 @@ class PUBLIC Client : public QObject {
     // API calls
 
     /**
-     * @brief Get server discovery information. This will also update the client
+     * @brief (async) Get server discovery information. This will also update
+       the client
      *
      * @return Responses::ResponseFuture
      */
     Responses::ResponseFuture getDiscovery();
 
     /**
-     * @brief Get the Server Version and unstable features
+     * @brief (async) Get the Server Version and unstable features
      *
      * @return Responses::ResponseFuture
      */
     Responses::ResponseFuture getServerVersion() const;
 
     /**
-     * @brief Get server supported login types
+     * @brief (async) Get server supported login types
      *
      * @return Responses::ResponseFuture
      */
     Responses::ResponseFuture getLoginTypes() const;
 
     /**
-     * @brief Logs in to the specified account with password
+     * @brief (async) Logs in to the specified account with password
      *
      * @param user User name, can be fully qualified or local userId
      * @param password Password for the user

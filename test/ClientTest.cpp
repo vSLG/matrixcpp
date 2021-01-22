@@ -13,7 +13,7 @@ class ClientTest : public QObject {
 
   private slots:
     void initTestCase() {
-        client = new Client("utwente.io");
+        client = new Client("privacytools.io");
         client->loadDiscovery();
     }
 
