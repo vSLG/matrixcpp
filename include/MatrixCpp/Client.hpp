@@ -39,6 +39,12 @@ class PUBLIC Client : public QObject {
      */
     explicit Client(const QUrl &homeserverUrl, QObject *parent = nullptr);
 
+    /**
+     * @brief (sync) Request for well_known and update the client
+     *
+     */
+    void loadDiscovery();
+
     // Enums and structs
 
     /**
@@ -48,6 +54,13 @@ class PUBLIC Client : public QObject {
     enum Presence { PRESENCE_ONLINE, PRESENCE_BUSY, PRESENCE_OFFLINE };
 
     // API calls
+
+    /**
+     * @brief Get server discovery information. This will also update the client
+     *
+     * @return Responses::ResponseFuture
+     */
+    Responses::ResponseFuture getDiscovery();
 
     /**
      * @brief Get the Server Version and unstable features

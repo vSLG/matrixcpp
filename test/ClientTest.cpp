@@ -13,7 +13,8 @@ class ClientTest : public QObject {
 
   private slots:
     void initTestCase() {
-        client = new Client("matrix.org");
+        client = new Client("utwente.io");
+        client->loadDiscovery();
     }
 
     void serverVersion() {

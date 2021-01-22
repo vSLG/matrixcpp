@@ -203,4 +203,16 @@ class PUBLIC LoginResponse : public Response {
     QUrl    homeserver;
     QUrl    identityServer;
 };
+
+/**
+ * @brief Response object for well-known server info
+ *
+ */
+class PUBLIC WellKnownResponse : public Response {
+    RESPONSE_CONSTRUCTOR(WellKnownResponse)
+
+  public:
+    QUrl homeserver;
+    QUrl identityServer;
+};
 } // namespace MatrixCpp::Responses

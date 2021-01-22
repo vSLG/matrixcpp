@@ -37,7 +37,29 @@ Client::Client(const QString &host, QObject *parent) : QObject(parent) {
     this->m_nam = new QNetworkAccessManager(this);
 }
 
+void Client::loadDiscovery() {
+    // Simply invoke getDiscovery and wait for it
+    this->getDiscovery().result();
+}
+
 // Api routines
+
+ResponseFuture Client::getDiscovery() {
+    ResponseFuture future = this->get("/.well-known/matrix/client");
+
+    QObject::connect(&future,
+                     &ResponseFuture::responseComplete,
+                     [&](WellKnownResponse response) {
+                         if (response.isBroken() || response.isError())
+                             return;
+
+                         // Do we really need to check returned homeserver URL?
+                         this->homeserverUrl = response.homeserver;
+                         // TODO: response.identityServer
+                     });
+
+    return future;
+}
 
 ResponseFuture Client::getServerVersion() const {
     return this->get("/_matrix/client/versions");

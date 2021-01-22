@@ -123,3 +123,26 @@ void LoginResponse::parseData() {
         qWarning(
             "LoginResponse: well_known present, but no m.homeserver present");
 }
+
+/*
+ * WellKnownResponse
+ */
+
+void WellKnownResponse::parseData() {
+    QVariantMap dataMap = this->data.toMap();
+
+    // Start by checking if root data is a Map
+    if (dataMap.isEmpty()) {
+        qCritical() << "WellKnownResponse: expected data to be a Map";
+        this->m_broken = true;
+        return;
+    }
+
+    this->homeserver = dataMap["m.homeserver"].toMap()["base_url"].toUrl();
+    this->identityServer =
+        dataMap["m.identity_server"].toMap()["base_url"].toUrl();
+
+    if (this->homeserver.isEmpty()) {
+        qCritical("WellKnownResponse: no m.homeserver present");
+    }
+}
