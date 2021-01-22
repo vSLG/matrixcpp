@@ -40,6 +40,25 @@ class ClientTest : public QObject {
         QVERIFY(response.flows.size() > 0);
     }
 
+    void loginAccount() {
+        LoginResponse response =
+            client->login("<enter_user_here>", "<insert_pw_here>").result();
+
+        if (response.isBroken())
+            QSKIP("Response is broken");
+
+        if (response.isError())
+            QSKIP("Response is error");
+
+        qInfo() << "Client user id:" << client->userId();
+        qInfo() << "Client device id:" << client->deviceId();
+        qInfo() << "Client homeserver:" << client->homeserverUrl;
+
+        QVERIFY(!client->userId().isEmpty());
+        QVERIFY(!client->deviceId().isEmpty());
+        QVERIFY(!client->accessToken().isEmpty());
+    }
+
     void cleanupTestCase() {
         delete client;
     }

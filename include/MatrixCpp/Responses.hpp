@@ -25,15 +25,16 @@
                                                            \
   public:                                                  \
     type(QByteArray rawResponse) : Response(rawResponse) { \
-        this->parseData();                                 \
+        if (!this->isError())                              \
+            this->parseData();                             \
     };                                                     \
     type(QVariant data) : Response(data) {                 \
-        this->parseData();                                 \
+        if (!this->isError())                              \
+            this->parseData();                             \
     };                                                     \
     type(const Response &other) : Response(other) {        \
-        if (this->m_deepBroken)                            \
-            return;                                        \
-        this->parseData();                                 \
+        if (!this->m_deepBroken && !this->isError())       \
+            this->parseData();                             \
     };
 
 namespace MatrixCpp::Responses {
@@ -72,6 +73,14 @@ class PUBLIC Response {
      * @return false
      */
     bool isBroken() const;
+
+    /**
+     * @brief Tell if Response is an error
+     *
+     * @return true
+     * @return false
+     */
+    bool isError() const;
 
     /**
      * @brief Return response as another type of response
@@ -113,6 +122,13 @@ class PUBLIC ResponseFuture : public QObject {
     explicit ResponseFuture(QNetworkReply *reply);
 
     /**
+     * @brief Construct a new ResponseFuture object
+     *
+     * @param other
+     */
+    ResponseFuture(const ResponseFuture &other);
+
+    /**
      * @brief Get the Response object when request finishes
      *
      * @return Response
@@ -135,8 +151,16 @@ class PUBLIC ResponseFuture : public QObject {
     void responseComplete(Response response);
 
   private:
-    bool       m_finished = false;
-    QByteArray m_rawResponse;
+    /**
+     * @brief Initializes object. Takes same params of default constructor
+     *
+     * @param reply
+     */
+    void init(QNetworkReply *reply);
+
+    QNetworkReply *m_reply;
+    bool           m_finished = false;
+    QByteArray     m_rawResponse;
 };
 
 class PUBLIC ErrorResponse : public Response {};
@@ -163,5 +187,20 @@ class PUBLIC LoginTypesResponse : public Response {
   public:
     QList<QMap<QString, QString>> flows;
     QStringList                   types;
+};
+
+/**
+ * @brief Response object for login
+ *
+ */
+class PUBLIC LoginResponse : public Response {
+    RESPONSE_CONSTRUCTOR(LoginResponse)
+
+  public:
+    QString userId;
+    QString accessToken;
+    QString deviceId;
+    QUrl    homeserver;
+    QUrl    identityServer;
 };
 } // namespace MatrixCpp::Responses

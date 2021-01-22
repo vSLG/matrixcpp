@@ -63,6 +63,40 @@ class PUBLIC Client : public QObject {
      */
     Responses::ResponseFuture getLoginTypes() const;
 
+    /**
+     * @brief Logs in to the specified account with password
+     *
+     * @param user User name, can be fully qualified or local userId
+     * @param password Password for the user
+     * @param deviceId Optional deviceId
+     * @return Responses::ResponseFuture
+     */
+    Responses::ResponseFuture
+    login(QString user, QString password, QString deviceId = "");
+
+    // Getters & setters
+
+    /**
+     * @brief Gets the user_id
+     *
+     * @return QString
+     */
+    QString userId() const;
+
+    /**
+     * @brief Gets the device_id
+     *
+     * @return QString
+     */
+    QString deviceId() const;
+
+    /**
+     * @brief Gets the access_token
+     *
+     * @return QString
+     */
+    QString accessToken() const;
+
     // Public variables
 
     QUrl homeserverUrl;
@@ -87,6 +121,28 @@ class PUBLIC Client : public QObject {
      */
     Responses::ResponseFuture get(QUrl url) const;
 
+    /**
+     * @brief Sends POST JSON to specified path
+     *
+     * @param path
+     * @param data The data to be sent. Will be JSON encoded
+     * @return Responses::ResponseFuture
+     */
+    Responses::ResponseFuture send(QString path, QVariant data) const;
+
+    /**
+     * @brief Sends POST JSON to specified URL
+     *
+     * @param url
+     * @param data The data to be sent. Will be JSON encoded
+     * @return Responses::ResponseFuture
+     */
+    Responses::ResponseFuture send(QUrl url, QVariant data) const;
+
     QNetworkAccessManager *m_nam;
+
+    QString m_userId;
+    QString m_accessToken;
+    QString m_deviceId;
 };
 } // namespace MatrixCpp

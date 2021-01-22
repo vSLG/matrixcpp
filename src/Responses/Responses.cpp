@@ -16,6 +16,7 @@ using namespace MatrixCpp::Responses;
 /*
  * VersionsResponse
  */
+
 void VersionsResponse::parseData() {
     QVariantMap dataMap = this->data.toMap();
 
@@ -41,11 +42,6 @@ void VersionsResponse::parseData() {
         for (; it != unstableFeaturesMap.end(); ++it)
             this->unstableFeatures[it.key()] = it.value().toBool();
     }
-
-    QVariantMap newData;
-    newData["versions"]          = this->versions;
-    newData["unstable_features"] = unstableFeaturesMap;
-    this->data.setValue(newData);
 }
 
 /*
@@ -82,8 +78,48 @@ void LoginTypesResponse::parseData() {
         this->types.append(entry["type"].toString());
         this->flows.append(newEntry);
     }
+}
 
-    QVariantMap newData;
-    newData["flows"] = flows;
-    this->data.setValue(newData);
+/*
+ * LoginResponse
+ */
+
+void LoginResponse::parseData() {
+    QVariantMap dataMap = this->data.toMap();
+
+    // Start by checking if root data is a Map
+    if (dataMap.isEmpty()) {
+        qCritical() << "LoginResponse: expected data to be a Map";
+        this->m_broken = true;
+        return;
+    }
+
+    for (QString key : {"user_id", "access_token", "device_id"})
+        if (dataMap[key].isNull()) {
+            qCritical() << "LoginResponse: data does not contain" << key
+                        << "key";
+            this->m_broken = true;
+            return;
+        }
+
+    this->userId      = dataMap["user_id"].toString();
+    this->accessToken = dataMap["access_token"].toString();
+    this->deviceId    = dataMap["device_id"].toString();
+
+    if (dataMap["well_known"].isNull())
+        return; // End it here
+
+    this->homeserver = dataMap["well_known"]
+                           .toMap()["m.homeserver"]
+                           .toMap()["base_url"]
+                           .toUrl();
+
+    this->identityServer = dataMap["well_known"]
+                               .toMap()["m.identity_server"]
+                               .toMap()["base_url"]
+                               .toUrl();
+
+    if (this->homeserver.isEmpty())
+        qWarning(
+            "LoginResponse: well_known present, but no m.homeserver present");
 }

@@ -60,3 +60,7 @@ QByteArray Response::getJson() const {
 bool Response::isBroken() const {
     return this->m_broken || this->m_deepBroken;
 }
+
+bool Response::isError() const {
+    return !this->data.toMap()["errcode"].isNull();
+}

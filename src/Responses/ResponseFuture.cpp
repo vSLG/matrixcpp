@@ -13,22 +13,19 @@
 #include <QNetworkReply>
 
 #include <MatrixCpp/Responses.hpp>
+#include <qnamespace.h>
+#include <qnetworkaccessmanager.h>
 
 using namespace MatrixCpp::Responses;
 
 // Public functions
 
 ResponseFuture::ResponseFuture(QNetworkReply *reply) : QObject(nullptr) {
-    QObject::connect(reply, &QNetworkReply::finished, [=]() {
-        this->m_finished = true;
+    this->init(reply);
+}
 
-        if (reply->error())
-            this->m_rawResponse = "";
-        else
-            this->m_rawResponse = reply->readAll();
-
-        emit this->responseComplete(this->result());
-    });
+ResponseFuture::ResponseFuture(const ResponseFuture &other) {
+    this->init(other.m_reply);
 }
 
 Response ResponseFuture::result() {
@@ -41,4 +38,24 @@ Response ResponseFuture::result() {
     }
 
     return Response(this->m_rawResponse);
+}
+
+// Private functions
+
+void ResponseFuture::init(QNetworkReply *reply) {
+    this->m_reply = reply;
+
+    QObject::connect(this->m_reply, &QNetworkReply::finished, [=]() {
+        this->m_finished = true;
+
+        // If error is above 99, it is http error. We do not want to ignore
+        // those, since some of them contain matrix structures.
+        if (this->m_reply->error() < 99 && this->m_reply->error() > 0)
+            this->m_rawResponse = "";
+        else
+            this->m_rawResponse = this->m_reply->readAll();
+
+        this->m_reply->deleteLater();
+        emit this->responseComplete(this->result());
+    });
 }
