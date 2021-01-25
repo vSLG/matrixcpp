@@ -1,2 +1,3 @@
 build
 .cache
+test/account_info

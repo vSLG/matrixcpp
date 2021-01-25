@@ -13,12 +13,18 @@ class ClientTest : public QObject {
 
   private slots:
     void initTestCase() {
-        QFile accFile("account_info");
+        // Use path provided by CMake
+        QFile accFile("@ACCOUNT_INFO@");
 
         if (!accFile.exists())
             qFatal(
                 "%s",
-                (accFile.fileName() + " does not exist").toStdString().c_str());
+                (accFile.fileName() +
+                 " does not exist. Please create a plain text file with the "
+                 "following format: '<homeserver_host> <user_id> <device_id> "
+                 "<access_token>'")
+                    .toStdString()
+                    .c_str());
 
         accFile.open(QFile::ReadOnly);
         QByteArray content = accFile.readAll();
@@ -26,8 +32,8 @@ class ClientTest : public QObject {
 
         QList<QByteArray> parts = content.split(' ');
 
-        client = new Client("matrix.org");
-        client->restore(parts[0], parts[1], parts[2]);
+        client = new Client(parts[0]);
+        client->restore(parts[1], parts[2], parts[3]);
         client->loadDiscovery();
     }
 

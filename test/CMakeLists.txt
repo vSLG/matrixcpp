@@ -1,6 +1,9 @@
 enable_testing(true)
 
-add_executable(ClientTest ClientTest.cpp)
+set(ACCOUNT_INFO ${CMAKE_CURRENT_SOURCE_DIR}/account_info)
+configure_file(ClientTest.cpp.in ${CMAKE_CURRENT_BINARY_DIR}/ClientTest.cpp @ONLY)
+
+add_executable(ClientTest ${CMAKE_CURRENT_BINARY_DIR}/ClientTest.cpp)
 add_test(NAME ClientTest COMMAND ClientTest)
 target_link_libraries(ClientTest ${PROJECT} Qt::Test Qt::Core Qt::Network)
 
