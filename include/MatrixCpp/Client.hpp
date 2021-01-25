@@ -20,6 +20,11 @@
 #include <MatrixCpp/Responses.hpp>
 
 namespace MatrixCpp {
+
+/**
+ * @brief A Matrix Client
+ *
+ */
 class PUBLIC Client : public QObject {
     Q_OBJECT
 
@@ -153,9 +158,13 @@ class PUBLIC Client : public QObject {
 
     // Public variables
 
-    QUrl homeserverUrl;
+    QUrl homeserverUrl; ///< Current homeserver URL this Client is associated
 
   signals:
+    /**
+     * @brief When fired, will stop all ongoing requests
+     *
+     */
     void abortRequests();
 
   protected slots:

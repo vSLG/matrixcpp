@@ -101,6 +101,11 @@ class PUBLIC MatrixObj {
     QVariant data; ///< Original data stored in this MatrixObj
 
   protected:
+    /**
+     * @brief Function to be run after parent constructor, for parsing given
+       data
+     *
+     */
     virtual void parseData() = 0;
 
     bool m_broken = false;
@@ -150,8 +155,23 @@ class PUBLIC UnsignedData : public MatrixObj {
   public:
     using MatrixObj::MatrixObj;
 
-    int     age;
-    Event   redactedBecause;
+    /**
+     * @brief The time in milliseconds that has elapsed since the event was sent
+     *
+     */
+    int age;
+
+    /**
+     * @brief Optional. The event that redacted this event, if any
+     *
+     */
+    Event redactedBecause;
+
+    /**
+     * @brief The client-supplied transaction ID, if the client being given
+       the event is the same one which sent it.
+     *
+     */
     QString transactionId;
 };
 
@@ -165,10 +185,21 @@ class PUBLIC EventContent : public MatrixObj {
   public:
     using MatrixObj::MatrixObj;
 
-    QString      avatarUrl;
-    QString      displayName;
-    QString      membership;
-    bool         isDirect;
+    QString avatarUrl;   ///< The avatar URL for this user, if any
+    QString displayName; ///< The display name for this user, if any
+    QString membership;  ///< Required. The membership state of the user
+
+    /**
+     * @brief Flag indicating if the room containing this event was created with
+       the intention of being a direct chat
+     *
+     */
+    bool isDirect;
+
+    /**
+     * @brief Contains optional extra information about the event
+     *
+     */
     UnsignedData unsignedData;
 };
 
@@ -180,10 +211,33 @@ class PUBLIC RoomEvent : public Event {
     CLASS_CONSTRUCTOR(RoomEvent, Event)
 
   public:
-    QVariantMap  content;
-    QString      eventId;
-    QString      sender;
-    int          serverTs;
+    /**
+     * @brief Required. The fields in this object will vary depending on the
+       type of event
+     *
+     */
+    QVariantMap content;
+
+    QString eventId; ///< Required. The globally unique event identifier
+
+    /**
+     * @brief Required. Contains the fully-qualified ID of the user who sent
+       this event
+     *
+     */
+    QString sender;
+
+    /**
+     * @brief Required. Timestamp in milliseconds on originating homeserver when
+       this event was sent
+     *
+     */
+    int serverTs;
+
+    /**
+     * @brief Contains optional extra information about the event
+     *
+     */
     UnsignedData unsignedData;
 };
 
@@ -195,8 +249,19 @@ class PUBLIC StateEvent : public RoomEvent {
     CLASS_CONSTRUCTOR(StateEvent, RoomEvent)
 
   public:
+    /**
+     * @brief Optional. The previous content for this event. If there is no
+      a previous content, this key will be missing
+     *
+     */
     EventContent prevContent;
-    QString      stateKey;
+
+    /**
+     * @brief Required. A unique key which defines the overwriting semantics for
+       this piece of room state
+     *
+     */
+    QString stateKey;
 };
 
 /**
@@ -207,9 +272,9 @@ class PUBLIC StrippedStateEvent : public Event {
     CLASS_CONSTRUCTOR(StrippedStateEvent, Event)
 
   public:
-    EventContent content;
-    QString      stateKey;
-    QString      sender;
+    EventContent content;  ///< Required. The content for the event
+    QString      stateKey; ///< Required. The state_key for the event
+    QString      sender;   ///< Required. The sender for the event
 };
 
 /**
@@ -220,12 +285,44 @@ class PUBLIC Room : public MatrixObj {
     MATRIXOBJ_CONSTRUCTOR(Room)
 
   public:
-    QVariantMap       summary;
+    /**
+     * @brief Information about the room which clients may need to correctly
+       render it to users
+     *
+     */
+    QVariantMap summary;
+
+    /**
+     * @brief Updates to the state, between the time indicated by the since
+       parameter, and the start of the timeline
+     *
+     */
     QList<StateEvent> state;
-    QVariantMap       timeline;
-    QList<Event>      ephemeral;
-    QList<Event>      accountData;
-    QVariantMap       unreadNotifications;
+
+    /**
+     * @brief The timeline of messages and state changes in the room
+     *
+     */
+    QVariantMap timeline;
+
+    /**
+     * @brief The ephemeral events in the room that aren't recorded in the
+       timeline or state of the room. e.g. typing
+     *
+     */
+    QList<Event> ephemeral;
+
+    /**
+     * @brief The private data that this user has attached to this room
+     *
+     */
+    QList<Event> accountData;
+
+    /**
+     * @brief Counts of unread notifications for this room
+     *
+     */
+    QVariantMap unreadNotifications;
 };
 
 /**
@@ -236,6 +333,10 @@ class PUBLIC RoomInvite : public MatrixObj {
     MATRIXOBJ_CONSTRUCTOR(RoomInvite)
 
   public:
+    /**
+     * @brief The StrippedState events that form the invite state
+     *
+     */
     QList<StrippedStateEvent> events;
 };
 
@@ -243,8 +344,9 @@ class PUBLIC Rooms : public MatrixObj {
     MATRIXOBJ_CONSTRUCTOR(Rooms)
 
   public:
-    QMap<QString, Room>       join;
-    QMap<QString, RoomInvite> invite;
-    QVariantMap               leave;
+    QMap<QString, Room> join; ///< The rooms that the user has joined
+    QMap<QString, RoomInvite>
+                invite; ///< The rooms that the user has been invited to
+    QVariantMap leave; ///< The rooms that the user has left or been banned from
 };
 } // namespace MatrixCpp::Structs

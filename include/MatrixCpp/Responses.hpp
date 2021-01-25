@@ -136,8 +136,9 @@ class PUBLIC VersionsResponse : public Response {
     RESPONSE_CONSTRUCTOR(VersionsResponse)
 
   public:
-    QMap<QString, bool> unstableFeatures;
-    QStringList         versions;
+    QMap<QString, bool>
+        unstableFeatures; ///< Experimental features the server supports.
+    QStringList versions; ///< Required. The supported versions.
 };
 
 /**
@@ -148,8 +149,9 @@ class PUBLIC LoginTypesResponse : public Response {
     RESPONSE_CONSTRUCTOR(LoginTypesResponse)
 
   public:
-    QList<QMap<QString, QString>> flows;
-    QStringList                   types;
+    QList<QMap<QString, QString>>
+                flows; ///< The homeserver's supported login types (raw)
+    QStringList types; ///< The homeserver's supported login types
 };
 
 /**
@@ -160,11 +162,11 @@ class PUBLIC LoginResponse : public Response {
     RESPONSE_CONSTRUCTOR(LoginResponse)
 
   public:
-    QString userId;
-    QString accessToken;
-    QString deviceId;
-    QUrl    homeserver;
-    QUrl    identityServer;
+    QString userId;      ///< Fully qualified user ID returned by server
+    QString accessToken; ///< Access token for using with auth-required requests
+    QString deviceId;    ///< Device ID returned by server
+    QUrl    homeserver;  ///< Well known information (see WellKnownResponse)
+    QUrl    identityServer; ///< Well known information (see WellKnownResponse)
 };
 
 /**
@@ -175,19 +177,45 @@ class PUBLIC WellKnownResponse : public Response {
     RESPONSE_CONSTRUCTOR(WellKnownResponse)
 
   public:
+    /**
+     * @brief Homeserver URL returned by server and to be used for subsequent
+       requests
+     *
+     */
     QUrl homeserver;
-    QUrl identityServer;
+    QUrl identityServer; ///< Identity server URL returned by server
 };
 
 class PUBLIC SyncResponse : public Response {
     RESPONSE_CONSTRUCTOR(SyncResponse)
 
   public:
-    QString               nextBatch;
-    QVariantMap           rooms;       // Temporary
-    QList<Structs::Event> presence;    // Temporary
-    QList<Structs::Event> accountData; // Temporary
-    QList<Structs::Event> toDevice;    // Temporary
-    QVariantMap           deviceLists; // Temporary
+    /**
+     * @brief Required. String to be used as since param of next sync
+     *
+     */
+    QString nextBatch;
+
+    QVariantMap rooms; ///< Updates to Rooms
+
+    /**
+     * @brief The updates to the presence status of other users
+     *
+     */
+    QList<Structs::Event> presence;
+
+    /**
+     * @brief The global private data created by this user
+     *
+     */
+    QList<Structs::Event> accountData;
+
+    /**
+     * @brief Information on the send-to-device messages for the client device
+     *
+     */
+    QList<Structs::Event> toDevice;
+
+    QVariantMap deviceLists; ///< Information on end-to-end device updates
 };
 } // namespace MatrixCpp::Responses
