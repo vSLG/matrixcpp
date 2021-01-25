@@ -17,6 +17,7 @@
 
 #include <MatrixCpp/Client.hpp>
 #include <MatrixCpp/Responses.hpp>
+#include <qobject.h>
 
 using namespace MatrixCpp;
 using namespace MatrixCpp::Responses;
@@ -35,7 +36,6 @@ Client::Client(const QString &host,
                const QString &deviceId,
                QObject *      parent)
     : QObject(parent), m_userId(user), m_deviceId(deviceId) {
-    this->homeserverUrl = QUrl();
     this->homeserverUrl.setHost(host);
     this->homeserverUrl.setScheme("https"); // Always use https?
     this->m_nam = new QNetworkAccessManager(this);
@@ -79,7 +79,7 @@ ResponseFuture Client::login(QString password, QString token) {
     QVariantMap loginData;
 
     if (this->m_userId.isEmpty())
-        throw std::runtime_error("");
+        throw std::runtime_error("Please set an user id");
 
     if (!password.isEmpty()) {
         QVariantMap identifier;
@@ -103,6 +103,41 @@ ResponseFuture Client::login(QString password, QString token) {
     QObject::connect(
         &future, &ResponseFuture::responseComplete, [=](Response response) {
             this->onLoginResponse(response);
+        });
+
+    return future;
+}
+
+ResponseFuture Client::sync(const QString &filter,
+                            const QString &since,
+                            bool           fullState,
+                            Presence       presence,
+                            int            timeout) {
+    QUrlQuery query;
+
+    query.addQueryItem("access_token", this->m_accessToken);
+
+    if (!filter.isEmpty())
+        query.addQueryItem("filter", filter);
+
+    if (!since.isEmpty())
+        query.addQueryItem("since", since);
+    else if (!this->m_nextBatch.isEmpty())
+        query.addQueryItem("since", this->m_nextBatch);
+
+    query.addQueryItem("full_state", fullState ? "true" : "false");
+    query.addQueryItem("presence",
+                       presence == PRESENCE_ONLINE        ? "online"
+                       : presence == PRESENCE_UNAVAILABLE ? "unavailable"
+                                                          : "offline");
+
+    query.addQueryItem("timeout", QString::number(timeout));
+
+    ResponseFuture future = this->get("/_matrix/client/r0/sync", query);
+
+    QObject::connect(
+        &future, &ResponseFuture::responseComplete, [=](Response response) {
+            this->onSyncResponse(response);
         });
 
     return future;
@@ -143,11 +178,16 @@ void Client::onDiscoveryResponse(WellKnownResponse response) {
     // TODO: response.identityServer
 }
 
+void Client::onSyncResponse(SyncResponse response) {
+    this->m_nextBatch = response.nextBatch;
+}
+
 // Private
 
-ResponseFuture Client::get(QString path) const {
+ResponseFuture Client::get(QString path, QUrlQuery query) const {
     QUrl requestUrl = this->homeserverUrl;
     requestUrl.setPath(path);
+    requestUrl.setQuery(query);
 
     return this->get(requestUrl);
 }
@@ -158,7 +198,7 @@ ResponseFuture Client::get(QUrl url) const {
     request.setHeader(QNetworkRequest::UserAgentHeader,
                       APP_NAME " " APP_VERSION);
 
-    qDebug() << "GET" << url;
+    qDebug() << "GET" << url.path();
     QNetworkReply *reply = this->m_nam->get(request);
 
     QObject::connect(this, SIGNAL(abortRequests()), reply, SLOT(abort()));

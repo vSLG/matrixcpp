@@ -14,6 +14,7 @@
 #include <QNetworkAccessManager>
 #include <QObject>
 #include <QUrl>
+#include <QUrlQuery>
 
 #include "export.hpp"
 #include <MatrixCpp/Responses.hpp>
@@ -32,7 +33,7 @@ class PUBLIC Client : public QObject {
      * @param parent QObject parent, if any
      */
     explicit Client(const QString &host,
-                    const QString &user,
+                    const QString &user     = "",
                     const QString &deviceId = "",
                     QObject *      parent   = nullptr);
 
@@ -45,7 +46,7 @@ class PUBLIC Client : public QObject {
      * @param parent QObject parent, if any
      */
     explicit Client(const QUrl &   homeserverUrl,
-                    const QString &user,
+                    const QString &user     = "",
                     const QString &deviceId = "",
                     QObject *      parent   = nullptr);
 
@@ -72,7 +73,7 @@ class PUBLIC Client : public QObject {
      * @brief Available presence states for a client
      *
      */
-    enum Presence { PRESENCE_ONLINE, PRESENCE_BUSY, PRESENCE_OFFLINE };
+    enum Presence { PRESENCE_ONLINE, PRESENCE_UNAVAILABLE, PRESENCE_OFFLINE };
 
     // API calls
 
@@ -108,6 +109,24 @@ class PUBLIC Client : public QObject {
      */
     Responses::ResponseFuture login(QString password    = "",
                                     QString accessToken = "");
+
+    /**
+     * @brief (async) Performs a sync request. This will also update the Client
+     *
+     * @param filter Filter id or plain JSON for the filter
+     * @param since A point in time to continue a sync from
+     * @param fullState Controls whether to include the full state for all rooms
+       the user is a member of
+     * @param presence Desired presence to set on sync request
+     * @param timeout The maximum time to wait, in milliseconds, before
+       returning this request
+     * @return Responses::ResponseFuture
+     */
+    Responses::ResponseFuture sync(const QString &filter    = "",
+                                   const QString &since     = "",
+                                   bool           fullState = false,
+                                   Presence       presence  = PRESENCE_ONLINE,
+                                   int            timeout   = 0);
 
     // Getters & setters
 
@@ -154,6 +173,13 @@ class PUBLIC Client : public QObject {
      */
     void onDiscoveryResponse(Responses::WellKnownResponse response);
 
+    /**
+     * @brief Sets Client properties properly from sync response
+     *
+     * @param response
+     */
+    void onSyncResponse(Responses::SyncResponse response);
+
   private:
     /**
      * @brief HTTP get request to specified path on homeserver
@@ -161,7 +187,8 @@ class PUBLIC Client : public QObject {
      * @param path
      * @return Responses::ResponseFuture
      */
-    Responses::ResponseFuture get(QString path) const;
+    Responses::ResponseFuture get(QString   path,
+                                  QUrlQuery query = QUrlQuery()) const;
 
     /**
      * @brief HTTP get request to specified URL
@@ -194,5 +221,6 @@ class PUBLIC Client : public QObject {
     QString m_userId;
     QString m_accessToken;
     QString m_deviceId;
+    QString m_nextBatch;
 };
 } // namespace MatrixCpp

@@ -1,7 +1,9 @@
-#include "MatrixCpp/Responses.hpp"
+#include <QFile>
+#include <QUrlQuery>
 #include <QtTest/QtTest>
 
 #include <MatrixCpp/Client.hpp>
+#include <MatrixCpp/Responses.hpp>
 
 using namespace MatrixCpp;
 using namespace MatrixCpp::Responses;
@@ -11,7 +13,21 @@ class ClientTest : public QObject {
 
   private slots:
     void initTestCase() {
-        client = new Client("matrix.org", "markov-bot");
+        QFile accFile("account_info");
+
+        if (!accFile.exists())
+            qFatal(
+                "%s",
+                (accFile.fileName() + " does not exist").toStdString().c_str());
+
+        accFile.open(QFile::ReadOnly);
+        QByteArray content = accFile.readAll();
+        accFile.close();
+
+        QList<QByteArray> parts = content.split(' ');
+
+        client = new Client("matrix.org");
+        client->restore(parts[0], parts[1], parts[2]);
         client->loadDiscovery();
     }
 
@@ -21,10 +37,10 @@ class ClientTest : public QObject {
         if (response.isBroken())
             QSKIP("Response is broken");
 
+        QVERIFY(response.versions.size() > 0);
+
         qInfo() << client->homeserverUrl.host()
                 << "versions:" << response.versions;
-
-        QVERIFY(response.versions.size() > 0);
     }
 
     void loginTypes() {
@@ -33,14 +49,32 @@ class ClientTest : public QObject {
         if (response.isBroken())
             QSKIP("Response is broken");
 
-        qInfo() << "Server login types:" << response.types;
-
         QVERIFY(response.types.size() > 0);
         QVERIFY(response.flows.size() > 0);
+
+        qInfo() << "Server login types:" << response.types;
     }
 
     void passwordLogin() {
-        LoginResponse response = client->login("<enter_pw_here>").result();
+        if (!client->accessToken().isEmpty())
+            QSKIP("Already have access token");
+
+        LoginResponse response = client->login("<secret>").result();
+
+        if (response.isError() || response.isBroken())
+            qFatal("Failed to log in");
+
+        QVERIFY(!client->userId().isEmpty());
+        QVERIFY(!client->deviceId().isEmpty());
+        QVERIFY(!client->accessToken().isEmpty());
+
+        qInfo() << "Client user id:" << client->userId();
+        qInfo() << "Client device id:" << client->deviceId();
+        qInfo() << "Client homeserver:" << client->homeserverUrl;
+    }
+
+    void sync() {
+        SyncResponse response = client->sync().result();
 
         if (response.isBroken())
             QSKIP("Response is broken");
@@ -48,13 +82,7 @@ class ClientTest : public QObject {
         if (response.isError())
             QSKIP("Response is error");
 
-        qInfo() << "Client user id:" << client->userId();
-        qInfo() << "Client device id:" << client->deviceId();
-        qInfo() << "Client homeserver:" << client->homeserverUrl;
-
-        QVERIFY(!client->userId().isEmpty());
-        QVERIFY(!client->deviceId().isEmpty());
-        QVERIFY(!client->accessToken().isEmpty());
+        QVERIFY(!response.nextBatch.isEmpty());
     }
 
     void cleanupTestCase() {

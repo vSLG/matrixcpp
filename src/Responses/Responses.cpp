@@ -18,20 +18,8 @@ using namespace MatrixCpp::Responses;
  */
 
 void VersionsResponse::parseData() {
-    QVariantMap dataMap = this->data.toMap();
-
-    // Start by checking if root data is a Map
-    if (dataMap.isEmpty()) {
-        qCritical() << "VersionsResponse: expected data to be a Map";
-        this->m_broken = true;
-        return;
-    }
-
-    if (dataMap["versions"].isNull()) {
-        qCritical() << "VersionsResponse: data does not contain 'versions' key";
-        this->m_broken = true;
-        return;
-    }
+    CHECK_MAP()
+    BROKEN(dataMap["versions"].isNull())
 
     this->versions = dataMap["versions"].value<QStringList>();
 
@@ -49,20 +37,8 @@ void VersionsResponse::parseData() {
  */
 
 void LoginTypesResponse::parseData() {
-    QVariantMap dataMap = this->data.toMap();
-
-    // Start by checking if root data is a Map
-    if (dataMap.isEmpty()) {
-        qCritical() << "LoginTypesResponse: expected data to be a Map";
-        this->m_broken = true;
-        return;
-    }
-
-    if (dataMap["flows"].isNull()) {
-        qCritical() << "LoginTypesResponse: data does not contain 'flows' key";
-        this->m_broken = true;
-        return;
-    }
+    CHECK_MAP()
+    BROKEN(dataMap["flows"].isNull())
 
     QVariantList flows = dataMap["flows"].toList();
 
@@ -85,22 +61,10 @@ void LoginTypesResponse::parseData() {
  */
 
 void LoginResponse::parseData() {
-    QVariantMap dataMap = this->data.toMap();
-
-    // Start by checking if root data is a Map
-    if (dataMap.isEmpty()) {
-        qCritical() << "LoginResponse: expected data to be a Map";
-        this->m_broken = true;
-        return;
-    }
+    CHECK_MAP()
 
     for (QString key : {"user_id", "access_token", "device_id"})
-        if (dataMap[key].isNull()) {
-            qCritical() << "LoginResponse: data does not contain" << key
-                        << "key";
-            this->m_broken = true;
-            return;
-        }
+        BROKEN(dataMap[key].isNull())
 
     this->userId      = dataMap["user_id"].toString();
     this->accessToken = dataMap["access_token"].toString();
@@ -118,10 +82,6 @@ void LoginResponse::parseData() {
                                .toMap()["m.identity_server"]
                                .toMap()["base_url"]
                                .toUrl();
-
-    if (this->homeserver.isEmpty())
-        qWarning(
-            "LoginResponse: well_known present, but no m.homeserver present");
 }
 
 /*
@@ -129,20 +89,25 @@ void LoginResponse::parseData() {
  */
 
 void WellKnownResponse::parseData() {
-    QVariantMap dataMap = this->data.toMap();
-
-    // Start by checking if root data is a Map
-    if (dataMap.isEmpty()) {
-        qCritical() << "WellKnownResponse: expected data to be a Map";
-        this->m_broken = true;
-        return;
-    }
+    CHECK_MAP()
 
     this->homeserver = dataMap["m.homeserver"].toMap()["base_url"].toUrl();
     this->identityServer =
         dataMap["m.identity_server"].toMap()["base_url"].toUrl();
+}
 
-    if (this->homeserver.isEmpty()) {
-        qCritical("WellKnownResponse: no m.homeserver present");
-    }
+/*
+ * SyncResponse
+ */
+
+void SyncResponse::parseData() {
+    CHECK_MAP()
+    BROKEN(dataMap["next_batch"].isNull())
+
+    this->nextBatch   = dataMap["next_batch"].toString();
+    this->rooms       = dataMap["rooms"].toMap();
+    this->presence    = dataMap["presence"].toMap()["events"].toList();
+    this->accountData = dataMap["account_data"].toMap()["events"].toList();
+    this->toDevice    = dataMap["to_device"].toMap()["events"].toList();
+    this->deviceLists = dataMap["device_lists"].toMap();
 }

@@ -37,6 +37,25 @@
             this->parseData();                             \
     };
 
+/**
+ * @brief Sets Response broken property if cond is true
+ *
+ * @param cond Condition to set Response broken property
+ */
+#define BROKEN(cond)           \
+    if (cond) {                \
+        this->m_broken = true; \
+        return;                \
+    }
+
+/**
+ * @brief Checks if data is a Map and create dataMap
+ *
+ */
+#define CHECK_MAP()                           \
+    QVariantMap dataMap = this->data.toMap(); \
+    BROKEN(dataMap.isEmpty())
+
 namespace MatrixCpp::Responses {
 
 /**
@@ -214,5 +233,17 @@ class PUBLIC WellKnownResponse : public Response {
   public:
     QUrl homeserver;
     QUrl identityServer;
+};
+
+class PUBLIC SyncResponse : public Response {
+    RESPONSE_CONSTRUCTOR(SyncResponse)
+
+  public:
+    QString      nextBatch;
+    QVariantMap  rooms;       // Temporary
+    QVariantList presence;    // Temporary
+    QVariantList accountData; // Temporary
+    QVariantList toDevice;    // Temporary
+    QVariantMap  deviceLists; // Temporary
 };
 } // namespace MatrixCpp::Responses
