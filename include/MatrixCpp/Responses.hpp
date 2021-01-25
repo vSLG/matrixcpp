@@ -183,11 +183,11 @@ class PUBLIC SyncResponse : public Response {
     RESPONSE_CONSTRUCTOR(SyncResponse)
 
   public:
-    QString      nextBatch;
-    QVariantMap  rooms;       // Temporary
-    QVariantList presence;    // Temporary
-    QVariantList accountData; // Temporary
-    QVariantList toDevice;    // Temporary
-    QVariantMap  deviceLists; // Temporary
+    QString               nextBatch;
+    QVariantMap           rooms;       // Temporary
+    QList<Structs::Event> presence;    // Temporary
+    QList<Structs::Event> accountData; // Temporary
+    QList<Structs::Event> toDevice;    // Temporary
+    QVariantMap           deviceLists; // Temporary
 };
 } // namespace MatrixCpp::Responses

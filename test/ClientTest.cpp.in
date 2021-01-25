@@ -4,6 +4,7 @@
 
 #include <MatrixCpp/Client.hpp>
 #include <MatrixCpp/Responses.hpp>
+#include <qdebug.h>
 
 using namespace MatrixCpp;
 using namespace MatrixCpp::Responses;

@@ -15,6 +15,9 @@
 
 using namespace MatrixCpp::Structs;
 
+/*
+ * MatrixObj
+ */
 MatrixObj::MatrixObj(QByteArray rawJson) {
     BROKEN(rawJson.isEmpty())
 
@@ -43,4 +46,33 @@ QByteArray MatrixObj::getJson() const {
 
 bool MatrixObj::isBroken() const {
     return this->m_broken;
+}
+
+/*
+ * Event
+ */
+
+void Event::parseData() {
+    QString type = this->data.toMap()["type"].toString();
+    BROKEN(type.isEmpty())
+
+    // Presence events
+    if (type == "m.presence")
+        this->type = M_PRESENCE;
+
+    // Room events
+    else if (type == "m.room.member")
+        this->type = M_ROOM_MEMBER;
+    else if (type == "m.room.message")
+        this->type = M_ROOM_MESSAGE;
+    else if (type == "m.room.name")
+        this->type = M_ROOM_NAME;
+
+    // Ephemeral events
+    else if (type == "m.typing")
+        this->type = M_TYPING;
+
+    // Other types
+    else
+        this->type = M_OTHER;
 }

@@ -12,6 +12,7 @@
 #include <MatrixCpp/Responses.hpp>
 
 using namespace MatrixCpp::Responses;
+using namespace MatrixCpp::Structs;
 
 /*
  * Response
@@ -116,10 +117,26 @@ void SyncResponse::parseData() {
     CHECK_MAP()
     BROKEN(dataMap["next_batch"].isNull())
 
-    this->nextBatch   = dataMap["next_batch"].toString();
-    this->rooms       = dataMap["rooms"].toMap();
-    this->presence    = dataMap["presence"].toMap()["events"].toList();
-    this->accountData = dataMap["account_data"].toMap()["events"].toList();
-    this->toDevice    = dataMap["to_device"].toMap()["events"].toList();
+    this->nextBatch = dataMap["next_batch"].toString();
+    this->rooms     = dataMap["rooms"].toMap();
+
+    for (QVariant item : dataMap["presence"].toMap()["events"].toList()) {
+        Event event = item;
+        if (!event.isBroken())
+            this->presence.append(event);
+    }
+
+    for (QVariant item : dataMap["account_data"].toMap()["events"].toList()) {
+        Event event = item;
+        if (!event.isBroken())
+            this->accountData.append(event);
+    }
+
+    for (QVariant item : dataMap["to_device"].toMap()["events"].toList()) {
+        Event event = item;
+        if (!event.isBroken())
+            this->toDevice.append(event);
+    }
+
     this->deviceLists = dataMap["device_lists"].toMap();
 }

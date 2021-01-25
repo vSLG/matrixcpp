@@ -14,6 +14,28 @@
 #include <MatrixCpp/export.hpp>
 
 /**
+ * @brief Generates basic header for subclasses of Response
+ *
+ */
+#define MATRIXOBJ_CONSTRUCTOR(type)                         \
+  protected:                                                \
+    virtual void parseData() override;                      \
+                                                            \
+  public:                                                   \
+    type(QByteArray rawResponse) : MatrixObj(rawResponse) { \
+        if (!this->isBroken())                              \
+            this->parseData();                              \
+    };                                                      \
+    type(QVariant data) : MatrixObj(data) {                 \
+        if (!this->isBroken())                              \
+            this->parseData();                              \
+    };                                                      \
+    type(const MatrixObj &other) : MatrixObj(other) {       \
+        if (!this->isBroken())                              \
+            this->parseData();                              \
+    };
+
+/**
  * @brief Sets Response broken property if cond is true
  *
  * @param cond Condition to set Response broken property
@@ -80,5 +102,31 @@ class PUBLIC MatrixObj {
  * @brief Base class for matrix events
  *
  */
-class PUBLIC Event {};
+class PUBLIC Event : public MatrixObj {
+    MATRIXOBJ_CONSTRUCTOR(Event)
+
+  public:
+    /**
+     * @brief Various types of Event
+     *
+     */
+    enum Type {
+        // Presence events
+        M_PRESENCE,
+
+        // Room events
+        M_ROOM_MEMBER,
+        M_ROOM_MESSAGE,
+        M_ROOM_NAME,
+
+        // Ephemeral events
+        M_TYPING,
+
+        // Other types of events
+        M_UNKNOWN,
+        M_OTHER
+    };
+
+    Type type; ///< Type of this event
+};
 } // namespace MatrixCpp::Structs
