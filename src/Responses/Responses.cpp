@@ -14,6 +14,18 @@
 using namespace MatrixCpp::Responses;
 
 /*
+ * Response
+ */
+
+bool Response::isError() const {
+    return !this->data.toMap()["errcode"].isNull();
+}
+
+void Response::parseData() {
+    // Noop
+}
+
+/*
  * VersionsResponse
  */
 

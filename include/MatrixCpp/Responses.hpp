@@ -13,7 +13,8 @@
 
 #include <QNetworkReply>
 
-#include "export.hpp"
+#include <MatrixCpp/Structs.hpp>
+#include <MatrixCpp/export.hpp>
 
 /**
  * @brief Generates basic header for subclasses of Response
@@ -25,28 +26,17 @@
                                                            \
   public:                                                  \
     type(QByteArray rawResponse) : Response(rawResponse) { \
-        if (!this->isError())                              \
+        if (!this->isError() && !this->isBroken())         \
             this->parseData();                             \
     };                                                     \
     type(QVariant data) : Response(data) {                 \
-        if (!this->isError())                              \
+        if (!this->isError() && !this->isBroken())         \
             this->parseData();                             \
     };                                                     \
     type(const Response &other) : Response(other) {        \
-        if (!this->m_deepBroken && !this->isError())       \
+        if (!this->isError() && !this->isBroken())         \
             this->parseData();                             \
     };
-
-/**
- * @brief Sets Response broken property if cond is true
- *
- * @param cond Condition to set Response broken property
- */
-#define BROKEN(cond)           \
-    if (cond) {                \
-        this->m_broken = true; \
-        return;                \
-    }
 
 /**
  * @brief Checks if data is a Map and create dataMap
@@ -62,36 +52,10 @@ namespace MatrixCpp::Responses {
  * @brief A matrix server response
  *
  */
-class PUBLIC Response {
+class PUBLIC Response : public Structs::MatrixObj {
   public:
-    /**
-     * @brief Construct a new Response object
-     *
-     * @param rawResponse Raw response string
-     */
-    explicit Response(QByteArray rawResponse);
-
-    /**
-     * @brief Construct a new Response object
-     *
-     * @param data
-     */
-    Response(QVariant data);
-
-    /**
-     * @brief Construct a new Response object
-     *
-     * @param other
-     */
-    Response(const Response &other);
-
-    /**
-     * @brief Tell if Response is broken (e.g. malformed or empty json)
-     *
-     * @return true
-     * @return false
-     */
-    bool isBroken() const;
+    // Inherit constructors
+    using Structs::MatrixObj::MatrixObj;
 
     /**
      * @brief Tell if Response is an error
@@ -101,28 +65,8 @@ class PUBLIC Response {
      */
     bool isError() const;
 
-    /**
-     * @brief Return response as another type of response
-     *
-     * @tparam T The desided Response type
-     * @return T The new Response
-     */
-    template <class T> T as() const;
-
-    /**
-     * @brief Get the JSON-formatted data
-     *
-     * @return QByteArray
-     */
-    QByteArray getJson() const;
-
-    QVariant data;
-
   protected:
-    virtual void parseData();
-
-    bool m_broken     = false;
-    bool m_deepBroken = false;
+    virtual void parseData() override;
 };
 
 /**

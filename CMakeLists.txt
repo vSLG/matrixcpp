@@ -19,9 +19,9 @@ find_package(Olm REQUIRED)
 
 add_library(${PROJECT}
     src/Client.cpp
-    
+    src/Structs.cpp
+
     src/Responses/ResponseFuture.cpp
-    src/Responses/BaseResponse.cpp
     src/Responses/Responses.cpp
     
     include/${PROJECT}/Client.hpp
