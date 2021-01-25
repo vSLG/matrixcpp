@@ -14,26 +14,28 @@
 #include <MatrixCpp/export.hpp>
 
 /**
- * @brief Generates basic header for subclasses of Response
+ * @brief Generates basic header for specified subclass
  *
  */
-#define MATRIXOBJ_CONSTRUCTOR(type)                         \
-  protected:                                                \
-    virtual void parseData() override;                      \
-                                                            \
-  public:                                                   \
-    type(QByteArray rawResponse) : MatrixObj(rawResponse) { \
-        if (!this->isBroken())                              \
-            this->parseData();                              \
-    };                                                      \
-    type(QVariant data) : MatrixObj(data) {                 \
-        if (!this->isBroken())                              \
-            this->parseData();                              \
-    };                                                      \
-    type(const MatrixObj &other) : MatrixObj(other) {       \
-        if (!this->isBroken())                              \
-            this->parseData();                              \
+#define CLASS_CONSTRUCTOR(type, parent)                  \
+  protected:                                             \
+    virtual void parseData() override;                   \
+                                                         \
+  public:                                                \
+    type(QByteArray rawResponse) : parent(rawResponse) { \
+        if (!this->isBroken())                           \
+            this->parseData();                           \
+    };                                                   \
+    type(QVariant data) : parent(data) {                 \
+        if (!this->isBroken())                           \
+            this->parseData();                           \
+    };                                                   \
+    type(const parent &other) : parent(other) {          \
+        if (!this->isBroken())                           \
+            this->parseData();                           \
     };
+
+#define MATRIXOBJ_CONSTRUCTOR(type) CLASS_CONSTRUCTOR(type, MatrixObj)
 
 /**
  * @brief Sets Response broken property if cond is true
@@ -55,25 +57,31 @@ namespace MatrixCpp::Structs {
 class PUBLIC MatrixObj {
   public:
     /**
-     * @brief Construct a new MatrixObj object from JSON string
+     * @brief Construct a new empty MatrixObj
+     *
+     */
+    explicit MatrixObj();
+
+    /**
+     * @brief Construct a new MatrixObj from JSON string
      *
      * @param rawJson The JSON string
      */
     explicit MatrixObj(QByteArray rawJson);
 
     /**
-     * @brief Construct a new MatrixObj object from QVariant data
+     * @brief Construct a new MatrixObj from QVariant data
      *
      * @param data
      */
-    MatrixObj(QVariant data);
+    explicit MatrixObj(QVariant data);
 
     /**
      * @brief Construct a new MatrixObj object based on other MatrixObj
      *
      * @param other
      */
-    MatrixObj(const MatrixObj &other);
+    explicit MatrixObj(const MatrixObj &other);
 
     /**
      * @brief Tell if data is broken (e.g. malformed or empty json)
@@ -106,6 +114,8 @@ class PUBLIC Event : public MatrixObj {
     MATRIXOBJ_CONSTRUCTOR(Event)
 
   public:
+    using MatrixObj::MatrixObj;
+
     /**
      * @brief Various types of Event
      *
@@ -128,5 +138,113 @@ class PUBLIC Event : public MatrixObj {
     };
 
     Type type; ///< Type of this event
+};
+
+/**
+ * @brief Optional extra information about an Event
+ *
+ */
+class PUBLIC UnsignedData : public MatrixObj {
+    MATRIXOBJ_CONSTRUCTOR(UnsignedData)
+
+  public:
+    using MatrixObj::MatrixObj;
+
+    int     age;
+    Event   redactedBecause;
+    QString transactionId;
+};
+
+/**
+ * @brief Content for an Event
+ *
+ */
+class PUBLIC EventContent : public MatrixObj {
+    MATRIXOBJ_CONSTRUCTOR(EventContent)
+
+  public:
+    using MatrixObj::MatrixObj;
+
+    QString      avatarUrl;
+    QString      displayName;
+    QString      membership;
+    bool         isDirect;
+    UnsignedData unsignedData;
+};
+
+/**
+ * @brief Represents a room event
+ *
+ */
+class PUBLIC RoomEvent : public Event {
+    CLASS_CONSTRUCTOR(RoomEvent, Event)
+
+  public:
+    QVariantMap  content;
+    QString      eventId;
+    QString      sender;
+    int          serverTs;
+    UnsignedData unsignedData;
+};
+
+/**
+ * @brief Represents state of a Room
+ *
+ */
+class PUBLIC StateEvent : public RoomEvent {
+    CLASS_CONSTRUCTOR(StateEvent, RoomEvent)
+
+  public:
+    EventContent prevContent;
+    QString      stateKey;
+};
+
+/**
+ * @brief Same as StateEvent, but with less info
+ *
+ */
+class PUBLIC StrippedStateEvent : public Event {
+    CLASS_CONSTRUCTOR(StrippedStateEvent, Event)
+
+  public:
+    EventContent content;
+    QString      stateKey;
+    QString      sender;
+};
+
+/**
+ * @brief A matrix Room object
+ *
+ */
+class PUBLIC Room : public MatrixObj {
+    MATRIXOBJ_CONSTRUCTOR(Room)
+
+  public:
+    QVariantMap       summary;
+    QList<StateEvent> state;
+    QVariantMap       timeline;
+    QList<Event>      ephemeral;
+    QList<Event>      accountData;
+    QVariantMap       unreadNotifications;
+};
+
+/**
+ * @brief A Room which user has been invited to
+ *
+ */
+class PUBLIC RoomInvite : public MatrixObj {
+    MATRIXOBJ_CONSTRUCTOR(RoomInvite)
+
+  public:
+    QList<StrippedStateEvent> events;
+};
+
+class PUBLIC Rooms : public MatrixObj {
+    MATRIXOBJ_CONSTRUCTOR(Rooms)
+
+  public:
+    QMap<QString, Room>       join;
+    QMap<QString, RoomInvite> invite;
+    QVariantMap               leave;
 };
 } // namespace MatrixCpp::Structs

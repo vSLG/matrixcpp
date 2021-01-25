@@ -18,6 +18,9 @@ using namespace MatrixCpp::Structs;
 /*
  * MatrixObj
  */
+
+MatrixObj::MatrixObj() : m_broken(true){};
+
 MatrixObj::MatrixObj(QByteArray rawJson) {
     BROKEN(rawJson.isEmpty())
 
