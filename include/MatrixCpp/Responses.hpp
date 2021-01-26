@@ -196,7 +196,7 @@ class PUBLIC SyncResponse : public Response {
      */
     QString nextBatch;
 
-    QVariantMap rooms; ///< Updates to Rooms
+    Structs::Rooms rooms; ///< Updates to Rooms
 
     /**
      * @brief The updates to the presence status of other users

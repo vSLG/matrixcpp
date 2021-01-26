@@ -118,25 +118,16 @@ void SyncResponse::parseData() {
     BROKEN(dataMap["next_batch"].isNull())
 
     this->nextBatch = dataMap["next_batch"].toString();
-    this->rooms     = dataMap["rooms"].toMap();
+    this->rooms     = dataMap["rooms"];
 
-    for (QVariant item : dataMap["presence"].toMap()["events"].toList()) {
-        Event event = item;
-        if (!event.isBroken())
-            this->presence.append(event);
-    }
+    for (QVariant event : dataMap["presence"].toMap()["events"].toList())
+        this->presence.append(event);
 
-    for (QVariant item : dataMap["account_data"].toMap()["events"].toList()) {
-        Event event = item;
-        if (!event.isBroken())
-            this->accountData.append(event);
-    }
+    for (QVariant event : dataMap["account_data"].toMap()["events"].toList())
+        this->accountData.append(event);
 
-    for (QVariant item : dataMap["to_device"].toMap()["events"].toList()) {
-        Event event = item;
-        if (!event.isBroken())
-            this->toDevice.append(event);
-    }
+    for (QVariant event : dataMap["to_device"].toMap()["events"].toList())
+        this->toDevice.append(event);
 
     this->deviceLists = dataMap["device_lists"].toMap();
 }

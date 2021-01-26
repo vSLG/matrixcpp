@@ -89,6 +89,10 @@ class ClientTest : public QObject {
         if (response.isError())
             QSKIP("Response is error");
 
+        qDebug() << response.rooms.join.keys();
+        qDebug() << response.rooms.invite.keys();
+        qDebug() << response.rooms.leave.keys();
+
         QVERIFY(!response.nextBatch.isEmpty());
     }
 

@@ -344,6 +344,8 @@ class PUBLIC Rooms : public MatrixObj {
     MATRIXOBJ_CONSTRUCTOR(Rooms)
 
   public:
+    Rooms(){};
+
     QMap<QString, Room> join; ///< The rooms that the user has joined
     QMap<QString, RoomInvite>
                 invite; ///< The rooms that the user has been invited to

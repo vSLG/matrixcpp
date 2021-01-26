@@ -1,7 +1,7 @@
 enable_testing(true)
 
 set(ACCOUNT_INFO ${CMAKE_CURRENT_SOURCE_DIR}/account_info)
-configure_file(ClientTest.cpp.in ${CMAKE_CURRENT_BINARY_DIR}/ClientTest.cpp @ONLY)
+configure_file(ClientTest.cpp ${CMAKE_CURRENT_BINARY_DIR}/ClientTest.cpp @ONLY)
 
 add_executable(ClientTest ${CMAKE_CURRENT_BINARY_DIR}/ClientTest.cpp)
 add_test(NAME ClientTest COMMAND ClientTest)

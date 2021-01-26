@@ -231,5 +231,7 @@ class PUBLIC Client : public QObject {
     QString m_accessToken;
     QString m_deviceId;
     QString m_nextBatch;
+
+    Structs::Rooms m_rooms;
 };
 } // namespace MatrixCpp
