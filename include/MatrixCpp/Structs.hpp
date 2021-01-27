@@ -245,13 +245,24 @@ class PUBLIC CreateContent : public MatrixObj {
     MATRIXOBJ_CONSTRUCTOR(CreateContent)
 
   public:
-    QString creator;      ///< Required. The user_id of the room creator
-    bool federate = true; ///< Whether users on other servers can join this room
-    QString roomVersion = "1"; ///< The version of the room
+    QString creator;      ///< Required. The user_id of the Room creator
+    bool federate = true; ///< Whether users on other servers can join this Room
+    QString roomVersion = "1"; ///< The version of the Room
 
     // Predecessor fields (optional)
     QString roomId;  ///< The ID of the old room
     QString eventId; ///< The event ID of the last known event in the old room
+};
+
+/**
+ * @brief Content for an event of type m.room.name
+ *
+ */
+class PUBLIC NameContent : public MatrixObj {
+    MATRIXOBJ_CONSTRUCTOR(NameContent)
+
+  public:
+    QString name;
 };
 
 /**
@@ -300,6 +311,8 @@ class PUBLIC StateEvent : public RoomEvent {
     CLASS_CONSTRUCTOR(StateEvent, RoomEvent)
 
   public:
+    using RoomEvent::RoomEvent;
+
     /**
      * @brief Optional. The previous content for this event. If there is no
       a previous content, this key will be missing
@@ -449,9 +462,18 @@ class PUBLIC Room : public QObject {
      */
     Room(const QString &roomId, Client *client = nullptr);
 
-    QMap<QString, User *> users;        ///< Users this room has
-    QMap<QString, User *> invitedUsers; ///< Users invited to this room
+    /**
+     * @brief Returns Room's name
+     *
+     * @return QString
+     */
+    QString name() const;
+
+    QString               roomId;       ///< This Room's ID
+    QMap<QString, User *> users;        ///< Users this Room has
+    QMap<QString, User *> invitedUsers; ///< Users invited to this Room
     User *                creator;      ///< The creator of this Room
+    bool federate = true; ///< Whether users on other servers can join this Room
 
   protected:
     /**
@@ -474,7 +496,7 @@ class PUBLIC Room : public QObject {
      *
      * @param event
      */
-    void onStateEvent(StateEvent event);
+    void onEvent(RoomEvent event);
 
     /**
      * @brief Process m.room.member events
@@ -484,7 +506,7 @@ class PUBLIC Room : public QObject {
     void onRoomMemberEvent(StateEvent event);
 
   private:
-    QString m_roomId;
+    QString m_name;
 };
 } // namespace Structs
 } // namespace MatrixCpp

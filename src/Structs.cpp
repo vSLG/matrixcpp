@@ -144,6 +144,17 @@ void CreateContent::parseData() {
 }
 
 /*
+ * NameContent
+ */
+
+void NameContent::parseData() {
+    QVariantMap dataMap = this->data.toMap();
+
+    this->name = dataMap["name"].toString();
+    BROKEN(this->name.isEmpty())
+}
+
+/*
  * RoomEvent
  */
 
@@ -269,10 +280,19 @@ void Rooms::parseData() {
  */
 
 Room::Room(const QString &roomId, Client *client)
-    : QObject((QObject *) client), m_roomId(roomId) {
+    : QObject((QObject *) client), roomId(roomId) {
 }
 
-void Room::onStateEvent(StateEvent event) {
+QString Room::name() const {
+    if (!this->m_name.isEmpty())
+        return this->m_name;
+    return this->roomId;
+}
+
+void Room::onEvent(RoomEvent event) {
+    qDebug() << "ROOM" << this->name()
+             << "EVENT:" << event.data.toMap()["type"].toString();
+
     switch (event.type) {
         case Event::M_ROOM_MEMBER:
             this->onRoomMemberEvent(event);
@@ -283,9 +303,13 @@ void Room::onStateEvent(StateEvent event) {
             if (!this->users.contains(content.creator))
                 this->updateMember(content.creator);
 
-            this->creator = this->users[content.creator];
+            this->creator  = this->users.value(content.creator);
+            this->federate = content.federate;
             break;
         }
+        case Event::M_ROOM_NAME:
+            this->m_name = ((NameContent) event.content).name;
+            break;
         default:
             qDebug() << __FUNCTION__ << "Implement me:"
                      << event.data.toMap()["type"].toString();
@@ -330,7 +354,7 @@ void Room::updateMember(const QString &          userId,
         else
             this->invitedUsers.insert(userId, user);
 
-        qDebug() << this->m_roomId << "ADD:" << user->userId;
+        qDebug() << "ROOM" << this->name() << "ADD:" << user->userId;
 
         // We have nothing left to do
         return;

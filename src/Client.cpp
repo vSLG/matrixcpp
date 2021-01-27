@@ -197,7 +197,11 @@ void Client::onRoomJoinUpdate(const QMap<QString, RoomUpdate> &roomsUpdates) {
         Room *room = this->rooms[it.key()];
 
         for (StateEvent event : it.value().state)
-            room->onStateEvent(event);
+            room->onEvent(event);
+
+        for (RoomEvent event : it.value().timeline["events"].toList()) {
+            room->onEvent(event);
+        }
     }
 }
 
