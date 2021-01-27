@@ -37,6 +37,7 @@ Response ResponseFuture::result() {
         loop.exec();
     }
 
+    this->deleteLater();
     return Response(this->m_rawResponse);
 }
 

@@ -89,21 +89,21 @@ class PUBLIC Client : public QObject {
      *
      * @return Responses::ResponseFuture
      */
-    Responses::ResponseFuture getDiscovery();
+    Responses::ResponseFuture *getDiscovery();
 
     /**
      * @brief (async) Get the Server Version and unstable features
      *
      * @return Responses::ResponseFuture
      */
-    Responses::ResponseFuture getServerVersion() const;
+    Responses::ResponseFuture *getServerVersion() const;
 
     /**
      * @brief (async) Get server supported login types
      *
      * @return Responses::ResponseFuture
      */
-    Responses::ResponseFuture getLoginTypes() const;
+    Responses::ResponseFuture *getLoginTypes() const;
 
     /**
      * @brief (async) Logs in to the specified account with password OR
@@ -113,8 +113,8 @@ class PUBLIC Client : public QObject {
      * @param accessToken Access token for the user
      * @return Responses::ResponseFuture
      */
-    Responses::ResponseFuture login(QString password    = "",
-                                    QString accessToken = "");
+    Responses::ResponseFuture *login(QString password    = "",
+                                     QString accessToken = "");
 
     /**
      * @brief (async) Performs a sync request. This will also update the Client
@@ -128,11 +128,11 @@ class PUBLIC Client : public QObject {
        returning this request
      * @return Responses::ResponseFuture
      */
-    Responses::ResponseFuture sync(const QString &filter    = "",
-                                   const QString &since     = "",
-                                   bool           fullState = false,
-                                   Presence       presence  = PRESENCE_ONLINE,
-                                   int            timeout   = 0);
+    Responses::ResponseFuture *sync(const QString &filter    = "",
+                                    const QString &since     = "",
+                                    bool           fullState = false,
+                                    Presence       presence  = PRESENCE_ONLINE,
+                                    int            timeout   = 0);
 
     // Getters & setters
 
@@ -206,8 +206,8 @@ class PUBLIC Client : public QObject {
      * @param path
      * @return Responses::ResponseFuture
      */
-    Responses::ResponseFuture get(QString   path,
-                                  QUrlQuery query = QUrlQuery()) const;
+    Responses::ResponseFuture *get(QString   path,
+                                   QUrlQuery query = QUrlQuery()) const;
 
     /**
      * @brief HTTP get request to specified URL
@@ -215,7 +215,7 @@ class PUBLIC Client : public QObject {
      * @param url
      * @return Responses::ResponseFuture
      */
-    Responses::ResponseFuture get(QUrl url) const;
+    Responses::ResponseFuture *get(QUrl url) const;
 
     /**
      * @brief Sends POST JSON to specified path
@@ -224,7 +224,7 @@ class PUBLIC Client : public QObject {
      * @param data The data to be sent. Will be JSON encoded
      * @return Responses::ResponseFuture
      */
-    Responses::ResponseFuture send(QString path, QVariant data) const;
+    Responses::ResponseFuture *send(QString path, QVariant data) const;
 
     /**
      * @brief Sends POST JSON to specified URL
@@ -233,7 +233,7 @@ class PUBLIC Client : public QObject {
      * @param data The data to be sent. Will be JSON encoded
      * @return Responses::ResponseFuture
      */
-    Responses::ResponseFuture send(QUrl url, QVariant data) const;
+    Responses::ResponseFuture *send(QUrl url, QVariant data) const;
 
     QNetworkAccessManager *m_nam;
 

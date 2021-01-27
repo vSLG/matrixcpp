@@ -39,7 +39,7 @@ class ClientTest : public QObject {
     }
 
     void serverVersion() {
-        VersionsResponse response = client->getServerVersion().result();
+        VersionsResponse response = client->getServerVersion()->result();
 
         if (response.isBroken())
             QSKIP("Response is broken");
@@ -51,7 +51,7 @@ class ClientTest : public QObject {
     }
 
     void loginTypes() {
-        LoginTypesResponse response = client->getLoginTypes().result();
+        LoginTypesResponse response = client->getLoginTypes()->result();
 
         if (response.isBroken())
             QSKIP("Response is broken");
@@ -66,7 +66,7 @@ class ClientTest : public QObject {
         if (!client->accessToken().isEmpty())
             QSKIP("Already have access token");
 
-        LoginResponse response = client->login("<secret>").result();
+        LoginResponse response = client->login("<secret>")->result();
 
         if (response.isError() || response.isBroken())
             qFatal("Failed to log in");
@@ -81,7 +81,7 @@ class ClientTest : public QObject {
     }
 
     void sync() {
-        SyncResponse response = client->sync().result();
+        SyncResponse response = client->sync()->result();
 
         if (response.isBroken())
             QSKIP("Response is broken");
@@ -91,13 +91,13 @@ class ClientTest : public QObject {
 
         QVERIFY(!response.nextBatch.isEmpty());
 
-        while (1) {
+        do {
             SyncResponse response =
                 client
                     ->sync(
                         "", "", false, MatrixCpp::Client::PRESENCE_ONLINE, 7000)
-                    .result();
-        }
+                    ->result();
+        } while (0);
     }
 
     void cleanupTestCase() {

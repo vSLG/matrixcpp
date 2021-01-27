@@ -92,7 +92,8 @@ class PUBLIC ResponseFuture : public QObject {
     ResponseFuture(const ResponseFuture &other);
 
     /**
-     * @brief Get the Response object when request finishes
+     * @brief Get the Response object when request finishes. This will delete
+       ResponseFuture
      *
      * @return Response
      */

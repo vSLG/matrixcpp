@@ -45,7 +45,7 @@ Client::Client(const QString &host,
 
 void Client::loadDiscovery() {
     // Simply invoke getDiscovery and wait for it
-    this->getDiscovery().result();
+    this->getDiscovery()->result();
 }
 
 void Client::restore(const QString &userId,
@@ -58,26 +58,26 @@ void Client::restore(const QString &userId,
 
 // Api routines
 
-ResponseFuture Client::getDiscovery() {
-    ResponseFuture future = this->get("/.well-known/matrix/client");
+ResponseFuture *Client::getDiscovery() {
+    ResponseFuture *future = this->get("/.well-known/matrix/client");
 
     QObject::connect(
-        &future, &ResponseFuture::responseComplete, [=](Response response) {
+        future, &ResponseFuture::responseComplete, [=](Response response) {
             this->onDiscoveryResponse(response);
         });
 
     return future;
 }
 
-ResponseFuture Client::getServerVersion() const {
+ResponseFuture *Client::getServerVersion() const {
     return this->get("/_matrix/client/versions");
 }
 
-ResponseFuture Client::getLoginTypes() const {
+ResponseFuture *Client::getLoginTypes() const {
     return this->get("/_matrix/client/r0/login");
 }
 
-ResponseFuture Client::login(QString password, QString token) {
+ResponseFuture *Client::login(QString password, QString token) {
     QVariantMap loginData;
 
     if (this->m_userId.isEmpty())
@@ -100,21 +100,21 @@ ResponseFuture Client::login(QString password, QString token) {
 
     loginData["initial_device_display_name"] = APP_NAME;
 
-    ResponseFuture future = this->send("/_matrix/client/r0/login", loginData);
+    ResponseFuture *future = this->send("/_matrix/client/r0/login", loginData);
 
     QObject::connect(
-        &future, &ResponseFuture::responseComplete, [=](Response response) {
+        future, &ResponseFuture::responseComplete, [=](Response response) {
             this->onLoginResponse(response);
         });
 
     return future;
 }
 
-ResponseFuture Client::sync(const QString &filter,
-                            const QString &since,
-                            bool           fullState,
-                            Presence       presence,
-                            int            timeout) {
+ResponseFuture *Client::sync(const QString &filter,
+                             const QString &since,
+                             bool           fullState,
+                             Presence       presence,
+                             int            timeout) {
     QUrlQuery query;
 
     query.addQueryItem("access_token", this->m_accessToken);
@@ -135,10 +135,10 @@ ResponseFuture Client::sync(const QString &filter,
 
     query.addQueryItem("timeout", QString::number(timeout));
 
-    ResponseFuture future = this->get("/_matrix/client/r0/sync", query);
+    ResponseFuture *future = this->get("/_matrix/client/r0/sync", query);
 
     QObject::connect(
-        &future, &ResponseFuture::responseComplete, [=](Response response) {
+        future, &ResponseFuture::responseComplete, [=](Response response) {
             this->onSyncResponse(response);
         });
 
@@ -211,7 +211,7 @@ void Client::onRoomJoinUpdate(const QMap<QString, RoomUpdate> &roomsUpdates) {
 
 // Private
 
-ResponseFuture Client::get(QString path, QUrlQuery query) const {
+ResponseFuture *Client::get(QString path, QUrlQuery query) const {
     QUrl requestUrl = this->homeserverUrl;
     requestUrl.setPath(path);
     requestUrl.setQuery(query);
@@ -219,7 +219,7 @@ ResponseFuture Client::get(QString path, QUrlQuery query) const {
     return this->get(requestUrl);
 }
 
-ResponseFuture Client::get(QUrl url) const {
+ResponseFuture *Client::get(QUrl url) const {
     QNetworkRequest request(url);
 
     request.setHeader(QNetworkRequest::UserAgentHeader,
@@ -230,17 +230,17 @@ ResponseFuture Client::get(QUrl url) const {
 
     QObject::connect(this, SIGNAL(abortRequests()), reply, SLOT(abort()));
 
-    return ResponseFuture(reply);
+    return new ResponseFuture(reply);
 }
 
-ResponseFuture Client::send(QString path, QVariant data) const {
+ResponseFuture *Client::send(QString path, QVariant data) const {
     QUrl requestUrl = this->homeserverUrl;
     requestUrl.setPath(path);
 
     return this->send(requestUrl, data);
 }
 
-ResponseFuture Client::send(QUrl url, QVariant data) const {
+ResponseFuture *Client::send(QUrl url, QVariant data) const {
     QNetworkRequest request(url);
 
     request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
@@ -254,5 +254,5 @@ ResponseFuture Client::send(QUrl url, QVariant data) const {
 
     QObject::connect(this, SIGNAL(abortRequests()), reply, SLOT(abort()));
 
-    return ResponseFuture(reply);
+    return new ResponseFuture(reply);
 }
