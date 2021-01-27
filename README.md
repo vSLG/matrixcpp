@@ -28,3 +28,7 @@ The file must be in this format:
 ```
 
 After creating it, run the file `./test/ClientTest` (in the `build` directory)
+
+# License
+
+[LGPL-3.0](https://www.gnu.org/licenses/lgpl-3.0.en.html)

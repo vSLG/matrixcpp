@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
 /**
  * @file Responses.hpp
  * @author vslg (slgf@protonmail.ch)
