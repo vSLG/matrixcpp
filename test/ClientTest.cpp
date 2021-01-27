@@ -90,6 +90,14 @@ class ClientTest : public QObject {
             QSKIP("Response is error");
 
         QVERIFY(!response.nextBatch.isEmpty());
+
+        while (1) {
+            SyncResponse response =
+                client
+                    ->sync(
+                        "", "", false, MatrixCpp::Client::PRESENCE_ONLINE, 7000)
+                    .result();
+        }
     }
 
     void cleanupTestCase() {

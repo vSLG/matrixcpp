@@ -18,6 +18,7 @@
 #include <MatrixCpp/Client.hpp>
 #include <MatrixCpp/Responses.hpp>
 #include <MatrixCpp/Structs.hpp>
+#include <qdebug.h>
 
 using namespace MatrixCpp;
 using namespace MatrixCpp::Responses;
@@ -180,6 +181,9 @@ void Client::onDiscoveryResponse(WellKnownResponse response) {
 }
 
 void Client::onSyncResponse(SyncResponse response) {
+    if (response.isBroken() || response.isError())
+        return;
+
     this->m_nextBatch = response.nextBatch;
 
     if (!response.rooms.join.isEmpty())
@@ -188,7 +192,7 @@ void Client::onSyncResponse(SyncResponse response) {
 
 void Client::onRoomJoinUpdate(const QMap<QString, RoomUpdate> &roomsUpdates) {
     QMap<QString, RoomUpdate>::const_iterator it = roomsUpdates.begin();
-    while (++it != roomsUpdates.end()) {
+    do {
         // TODO: check if room is on invites
 
         if (!this->rooms.contains(it.key()))
@@ -202,7 +206,7 @@ void Client::onRoomJoinUpdate(const QMap<QString, RoomUpdate> &roomsUpdates) {
         for (RoomEvent event : it.value().timeline["events"].toList()) {
             room->onEvent(event);
         }
-    }
+    } while (++it != roomsUpdates.end());
 }
 
 // Private

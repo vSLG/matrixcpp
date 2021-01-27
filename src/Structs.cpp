@@ -161,9 +161,6 @@ void NameContent::parseData() {
 void RoomEvent::parseData() {
     QVariantMap dataMap = this->data.toMap();
 
-    this->content = dataMap["content"].toMap();
-    BROKEN(this->content.isEmpty())
-
     this->eventId = dataMap["event_id"].toString();
     BROKEN(this->eventId.isEmpty())
 
@@ -361,7 +358,7 @@ void Room::updateMember(const QString &          userId,
     }
 
     // Now update the user accordingly
-    User *user;
+    User *user = nullptr;
 
     if (membership == EventContent::MEMBERSHIP_JOIN &&
         this->invitedUsers.contains(userId)) {
@@ -370,6 +367,11 @@ void Room::updateMember(const QString &          userId,
         this->users.insert(userId, user);
     } else
         user = this->users[userId];
+
+    if (!user) {
+        qCritical() << "User broken" << userId;
+        return;
+    }
 
     if (!displayName.isEmpty())
         user->displayName = displayName;

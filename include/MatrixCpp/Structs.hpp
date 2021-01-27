@@ -273,13 +273,6 @@ class PUBLIC RoomEvent : public Event {
     CLASS_CONSTRUCTOR(RoomEvent, Event)
 
   public:
-    /**
-     * @brief Required. The fields in this object will vary depending on the
-       type of event
-     *
-     */
-    QVariantMap content;
-
     QString eventId; ///< Required. The globally unique event identifier
 
     /**
