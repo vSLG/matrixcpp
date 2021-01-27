@@ -89,7 +89,7 @@ class ClientTest : public QObject {
         if (response.isError())
             QSKIP("Response is error");
 
-        qDebug() << client->rooms.first()->users.first()->userId;
+        qDebug() << client->rooms.first()->creator->userId;
 
         QVERIFY(!response.nextBatch.isEmpty());
     }

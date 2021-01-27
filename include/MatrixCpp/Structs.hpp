@@ -62,6 +62,7 @@ class PUBLIC MatrixObj;
 class PUBLIC Event;
 class PUBLIC UnsignedData;
 class PUBLIC EventContent;
+class PUBLIC CreateContent;
 class PUBLIC RoomEvent;
 class PUBLIC StateEvent;
 class PUBLIC StrippedStateEvent;
@@ -155,6 +156,7 @@ class PUBLIC Event : public MatrixObj {
         M_ROOM_MEMBER,
         M_ROOM_MESSAGE,
         M_ROOM_NAME,
+        M_ROOM_CREATE,
 
         // Ephemeral events
         M_TYPING,
@@ -164,14 +166,8 @@ class PUBLIC Event : public MatrixObj {
         M_OTHER
     };
 
-    /**
-     * @brief Returns content key interpreted as EventContent
-     *
-     * @return EventContent
-     */
-    EventContent getEventContent() const;
-
-    Type type; ///< Type of this event
+    Type        type;    ///< Type of this event
+    QVariantMap content; ///< The event content
 };
 
 /**
@@ -239,6 +235,23 @@ class PUBLIC EventContent : public MatrixObj {
      *
      */
     UnsignedData unsignedData;
+};
+
+/**
+ * @brief Content for an event of type m.room.create
+ *
+ */
+class PUBLIC CreateContent : public MatrixObj {
+    MATRIXOBJ_CONSTRUCTOR(CreateContent)
+
+  public:
+    QString creator;      ///< Required. The user_id of the room creator
+    bool federate = true; ///< Whether users on other servers can join this room
+    QString roomVersion = "1"; ///< The version of the room
+
+    // Predecessor fields (optional)
+    QString roomId;  ///< The ID of the old room
+    QString eventId; ///< The event ID of the last known event in the old room
 };
 
 /**
@@ -438,6 +451,7 @@ class PUBLIC Room : public QObject {
 
     QMap<QString, User *> users;        ///< Users this room has
     QMap<QString, User *> invitedUsers; ///< Users invited to this room
+    User *                creator;      ///< The creator of this Room
 
   protected:
     /**
@@ -448,10 +462,11 @@ class PUBLIC Room : public QObject {
      * @param avatarUrl
      * @param membership One of: MEMBERSHIP_JOIN, MEMBERSHIP_INVITE
      */
-    void updateMember(const QString &          userId,
-                      const QString &          displayName,
-                      const QString &          avatarUrl,
-                      EventContent::Membership membership);
+    void updateMember(
+        const QString &          userId,
+        const QString &          displayName = "",
+        const QString &          avatarUrl   = "",
+        EventContent::Membership membership  = EventContent::MEMBERSHIP_JOIN);
 
   public slots:
     /**

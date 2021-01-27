@@ -61,6 +61,9 @@ void Event::parseData() {
     QString type = this->data.toMap()["type"].toString();
     BROKEN(type.isEmpty())
 
+    this->content = this->data.toMap()["content"].toMap();
+    BROKEN(this->content.isEmpty())
+
     // Presence events
     if (type == "m.presence")
         this->type = M_PRESENCE;
@@ -72,6 +75,8 @@ void Event::parseData() {
         this->type = M_ROOM_MESSAGE;
     else if (type == "m.room.name")
         this->type = M_ROOM_NAME;
+    else if (type == "m.room.create")
+        this->type = M_ROOM_CREATE;
 
     // Ephemeral events
     else if (type == "m.typing")
@@ -80,10 +85,6 @@ void Event::parseData() {
     // Other types
     else
         this->type = M_OTHER;
-}
-
-EventContent Event::getEventContent() const {
-    return this->data.toMap()["content"];
 }
 
 /*
@@ -124,6 +125,22 @@ void EventContent::parseData() {
     this->displayName  = dataMap["displayname"].toString();
     this->isDirect     = dataMap["is_direct"].toBool();
     this->unsignedData = dataMap["unsigned"];
+}
+
+/*
+ * CreateContent
+ */
+void CreateContent::parseData() {
+    QVariantMap dataMap = this->data.toMap();
+
+    this->creator = dataMap["creator"].toString();
+    BROKEN(this->creator.isEmpty())
+
+    this->federate    = dataMap["federate"].toBool();
+    this->roomVersion = dataMap["room_version"].toString();
+
+    this->roomId  = dataMap["predecessor"].toMap()["room_id"].toString();
+    this->eventId = dataMap["predecessor"].toMap()["event_id"].toString();
 }
 
 /*
@@ -260,6 +277,15 @@ void Room::onStateEvent(StateEvent event) {
         case Event::M_ROOM_MEMBER:
             this->onRoomMemberEvent(event);
             break;
+        case Event::M_ROOM_CREATE: {
+            CreateContent content(event.content);
+
+            if (!this->users.contains(content.creator))
+                this->updateMember(content.creator);
+
+            this->creator = this->users[content.creator];
+            break;
+        }
         default:
             qDebug() << __FUNCTION__ << "Implement me:"
                      << event.data.toMap()["type"].toString();
@@ -267,7 +293,7 @@ void Room::onStateEvent(StateEvent event) {
 }
 
 void Room::onRoomMemberEvent(StateEvent event) {
-    EventContent content = event.getEventContent();
+    EventContent content(event.content);
 
     switch (content.membership) {
         case EventContent::MEMBERSHIP_JOIN:
@@ -298,12 +324,13 @@ void Room::updateMember(const QString &          userId,
     // Start by checking if we know this member
     // If we do not know, add them
     if (!this->users.contains(userId) && !this->invitedUsers.contains(userId)) {
+        User *user = new User(this, userId, displayName, avatarUrl);
         if (membership == EventContent::MEMBERSHIP_JOIN)
-            this->users.insert(userId,
-                               new User(this, userId, displayName, avatarUrl));
+            this->users.insert(userId, user);
         else
-            this->invitedUsers.insert(
-                userId, new User(this, userId, displayName, avatarUrl));
+            this->invitedUsers.insert(userId, user);
+
+        qDebug() << this->m_roomId << "ADD:" << user->userId;
 
         // We have nothing left to do
         return;
