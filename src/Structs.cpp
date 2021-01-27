@@ -12,6 +12,8 @@
 #include <QJsonDocument>
 
 #include <MatrixCpp/Structs.hpp>
+#include <qdebug.h>
+#include <qobject.h>
 
 using namespace MatrixCpp::Structs;
 
@@ -80,6 +82,10 @@ void Event::parseData() {
         this->type = M_OTHER;
 }
 
+EventContent Event::getEventContent() const {
+    return this->data.toMap()["content"];
+}
+
 /*
  * UnsignedData
  */
@@ -100,7 +106,20 @@ void EventContent::parseData() {
     QVariantMap dataMap = this->data.toMap();
     BROKEN(dataMap["membership"].isNull())
 
-    this->membership   = dataMap["membership"].toString();
+    QString membership = dataMap["membership"].toString();
+    this->membership   = MEMBERSHIP_UNKNOWN;
+
+    if (membership == "invite")
+        this->membership = MEMBERSHIP_INVITE;
+    else if (membership == "join")
+        this->membership = MEMBERSHIP_JOIN;
+    else if (membership == "knock")
+        this->membership = MEMBERSHIP_KNOCK;
+    else if (membership == "leave")
+        this->membership = MEMBERSHIP_LEAVE;
+    else if (membership == "ban")
+        this->membership = MEMBERSHIP_BAN;
+
     this->avatarUrl    = dataMap["avatar_url"].toString();
     this->displayName  = dataMap["displayname"].toString();
     this->isDirect     = dataMap["is_direct"].toBool();
@@ -120,7 +139,7 @@ void RoomEvent::parseData() {
     this->eventId = dataMap["event_id"].toString();
     BROKEN(this->eventId.isEmpty())
 
-    this->sender = dataMap["seneder"].toString();
+    this->sender = dataMap["sender"].toString();
     BROKEN(this->sender.isEmpty())
 
     this->serverTs = dataMap["origin_server_ts"].toInt();
@@ -157,10 +176,10 @@ void StrippedStateEvent::parseData() {
 }
 
 /*
- * Room
+ * RoomUpdate
  */
 
-void Room::parseData() {
+void RoomUpdate::parseData() {
     QVariantMap dataMap = this->data.toMap();
 
     this->summary = dataMap["summary"].toMap();
@@ -212,7 +231,7 @@ void Rooms::parseData() {
     QVariantMap                 join = dataMap["join"].toMap();
     QVariantMap::const_iterator it   = join.begin();
     for (; it != join.end(); ++it) {
-        Room room = it.value();
+        RoomUpdate room = it.value();
         if (!room.isBroken())
             this->join.insert(it.key(), room);
     }
@@ -226,4 +245,96 @@ void Rooms::parseData() {
     }
 
     this->leave = dataMap["leave"].toMap();
+}
+
+/*
+ * Room
+ */
+
+Room::Room(const QString &roomId, Client *client)
+    : QObject((QObject *) client), m_roomId(roomId) {
+}
+
+void Room::onStateEvent(StateEvent event) {
+    switch (event.type) {
+        case Event::M_ROOM_MEMBER:
+            this->onRoomMemberEvent(event);
+            break;
+        default:
+            qDebug() << __FUNCTION__ << "Implement me:"
+                     << event.data.toMap()["type"].toString();
+    }
+}
+
+void Room::onRoomMemberEvent(StateEvent event) {
+    EventContent content = event.getEventContent();
+
+    switch (content.membership) {
+        case EventContent::MEMBERSHIP_JOIN:
+        case EventContent::MEMBERSHIP_INVITE:
+            this->updateMember(event.stateKey,
+                               content.displayName,
+                               content.avatarUrl,
+                               content.membership);
+            break;
+        case EventContent::MEMBERSHIP_BAN:
+        case EventContent::MEMBERSHIP_LEAVE: {
+            User *user;
+            user = this->users.take(event.stateKey);
+            delete user;
+            user = this->invitedUsers.take(event.stateKey);
+            delete user;
+            break;
+        }
+        default:
+            break;
+    }
+}
+
+void Room::updateMember(const QString &          userId,
+                        const QString &          displayName,
+                        const QString &          avatarUrl,
+                        EventContent::Membership membership) {
+    // Start by checking if we know this member
+    // If we do not know, add them
+    if (!this->users.contains(userId) && !this->invitedUsers.contains(userId)) {
+        if (membership == EventContent::MEMBERSHIP_JOIN)
+            this->users.insert(userId,
+                               new User(this, userId, displayName, avatarUrl));
+        else
+            this->invitedUsers.insert(
+                userId, new User(this, userId, displayName, avatarUrl));
+
+        // We have nothing left to do
+        return;
+    }
+
+    // Now update the user accordingly
+    User *user;
+
+    if (membership == EventContent::MEMBERSHIP_JOIN &&
+        this->invitedUsers.contains(userId)) {
+        // User changed from invited -> join
+        user = this->invitedUsers.take(userId);
+        this->users.insert(userId, user);
+    } else
+        user = this->users[userId];
+
+    if (!displayName.isEmpty())
+        user->displayName = displayName;
+
+    if (!avatarUrl.isEmpty())
+        user->avatarUrl = avatarUrl;
+}
+
+/*
+ * User
+ */
+
+User::User(Room *         room,
+           const QString &userId,
+           const QString &displayName,
+           const QString &avatarUrl)
+    : QObject(room), userId(userId), avatarUrl(avatarUrl),
+      displayName(displayName) {
 }

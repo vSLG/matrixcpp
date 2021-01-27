@@ -17,10 +17,11 @@
 
 #include <MatrixCpp/Client.hpp>
 #include <MatrixCpp/Responses.hpp>
-#include <qobject.h>
+#include <MatrixCpp/Structs.hpp>
 
 using namespace MatrixCpp;
 using namespace MatrixCpp::Responses;
+using namespace MatrixCpp::Structs;
 
 // Public definitions
 
@@ -180,6 +181,24 @@ void Client::onDiscoveryResponse(WellKnownResponse response) {
 
 void Client::onSyncResponse(SyncResponse response) {
     this->m_nextBatch = response.nextBatch;
+
+    if (!response.rooms.join.isEmpty())
+        this->onRoomJoinUpdate(response.rooms.join);
+}
+
+void Client::onRoomJoinUpdate(const QMap<QString, RoomUpdate> &roomsUpdates) {
+    QMap<QString, RoomUpdate>::const_iterator it = roomsUpdates.begin();
+    while (++it != roomsUpdates.end()) {
+        // TODO: check if room is on invites
+
+        if (!this->rooms.contains(it.key()))
+            this->rooms.insert(it.key(), new Room(it.key(), this));
+
+        Room *room = this->rooms[it.key()];
+
+        for (StateEvent event : it.value().state)
+            room->onStateEvent(event);
+    }
 }
 
 // Private

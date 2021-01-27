@@ -16,6 +16,7 @@
 #include <QUrl>
 #include <QUrlQuery>
 
+#include "MatrixCpp/Structs.hpp"
 #include "export.hpp"
 #include <MatrixCpp/Responses.hpp>
 
@@ -159,6 +160,7 @@ class PUBLIC Client : public QObject {
     // Public variables
 
     QUrl homeserverUrl; ///< Current homeserver URL this Client is associated
+    QMap<QString, Structs::Room *> rooms; ///< Rooms this Client is associated
 
   signals:
     /**
@@ -188,6 +190,14 @@ class PUBLIC Client : public QObject {
      * @param response
      */
     void onSyncResponse(Responses::SyncResponse response);
+
+    /**
+     * @brief Updates our rooms based on roomUpdate
+     *
+     * @param roomsUpdates
+     */
+    void
+    onRoomJoinUpdate(const QMap<QString, Structs::RoomUpdate> &roomsUpdates);
 
   private:
     /**
@@ -231,7 +241,5 @@ class PUBLIC Client : public QObject {
     QString m_accessToken;
     QString m_deviceId;
     QString m_nextBatch;
-
-    Structs::Rooms m_rooms;
 };
 } // namespace MatrixCpp

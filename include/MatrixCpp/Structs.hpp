@@ -9,9 +9,12 @@
  *
  */
 
+#pragma once
+
 #include <QVariant>
 
 #include <MatrixCpp/export.hpp>
+#include <qobject.h>
 
 /**
  * @brief Generates basic header for specified subclass
@@ -48,7 +51,26 @@
         return;                \
     }
 
-namespace MatrixCpp::Structs {
+namespace MatrixCpp {
+// We cannot include Client.hpp here, so forward declaration
+class Client;
+
+namespace Structs {
+
+// Forward declaration
+class PUBLIC MatrixObj;
+class PUBLIC Event;
+class PUBLIC UnsignedData;
+class PUBLIC EventContent;
+class PUBLIC RoomEvent;
+class PUBLIC StateEvent;
+class PUBLIC StrippedStateEvent;
+class PUBLIC RoomUpdate;
+class PUBLIC RoomInvite;
+class PUBLIC Rooms;
+
+class PUBLIC Room;
+class PUBLIC User;
 
 /**
  * @brief Base class for every matrix object (JSON)
@@ -142,6 +164,13 @@ class PUBLIC Event : public MatrixObj {
         M_OTHER
     };
 
+    /**
+     * @brief Returns content key interpreted as EventContent
+     *
+     * @return EventContent
+     */
+    EventContent getEventContent() const;
+
     Type type; ///< Type of this event
 };
 
@@ -185,9 +214,18 @@ class PUBLIC EventContent : public MatrixObj {
   public:
     using MatrixObj::MatrixObj;
 
-    QString avatarUrl;   ///< The avatar URL for this user, if any
-    QString displayName; ///< The display name for this user, if any
-    QString membership;  ///< Required. The membership state of the user
+    enum Membership {
+        MEMBERSHIP_INVITE,
+        MEMBERSHIP_JOIN,
+        MEMBERSHIP_KNOCK,
+        MEMBERSHIP_LEAVE,
+        MEMBERSHIP_BAN,
+        MEMBERSHIP_UNKNOWN,
+    };
+
+    QString    avatarUrl;   ///< The avatar URL for this user, if any
+    QString    displayName; ///< The display name for this user, if any
+    Membership membership;  ///< Required. The membership state of the user
 
     /**
      * @brief Flag indicating if the room containing this event was created with
@@ -281,8 +319,8 @@ class PUBLIC StrippedStateEvent : public Event {
  * @brief A matrix Room object
  *
  */
-class PUBLIC Room : public MatrixObj {
-    MATRIXOBJ_CONSTRUCTOR(Room)
+class PUBLIC RoomUpdate : public MatrixObj {
+    MATRIXOBJ_CONSTRUCTOR(RoomUpdate)
 
   public:
     /**
@@ -340,15 +378,98 @@ class PUBLIC RoomInvite : public MatrixObj {
     QList<StrippedStateEvent> events;
 };
 
+/**
+ * @brief Contains rooms information. Returned on sync request
+ *
+ */
 class PUBLIC Rooms : public MatrixObj {
     MATRIXOBJ_CONSTRUCTOR(Rooms)
 
   public:
     Rooms(){};
 
-    QMap<QString, Room> join; ///< The rooms that the user has joined
+    QMap<QString, RoomUpdate> join; ///< The rooms that the user has joined
     QMap<QString, RoomInvite>
                 invite; ///< The rooms that the user has been invited to
     QVariantMap leave; ///< The rooms that the user has left or been banned from
 };
-} // namespace MatrixCpp::Structs
+
+/**
+ * @brief Represents a matrix user, used by Room to store members
+ *
+ */
+class PUBLIC User : public QObject {
+    Q_OBJECT
+
+  public:
+    /**
+     * @brief Construct a new User object
+     *
+     * @param room The Room this user is
+     * @param userId
+     * @param displayName
+     * @param avatarUrl
+     */
+    User(Room *         room,
+         const QString &userId,
+         const QString &displayName = "",
+         const QString &avatarUrl   = "");
+
+    QString userId;      ///< Fully qualified matrix user ID
+    QString displayName; ///< User display name, if any
+    QString avatarUrl;   ///< User avatar URL, if any
+};
+
+/**
+ * @brief A Matrix room, used by Client to store Room information
+ *
+ */
+class PUBLIC Room : public QObject {
+    Q_OBJECT
+
+  public:
+    /**
+     * @brief Construct a new Room
+     *
+     * @param roomId
+     * @param client The Client this Room is registered
+     */
+    Room(const QString &roomId, Client *client = nullptr);
+
+    QMap<QString, User *> users;        ///< Users this room has
+    QMap<QString, User *> invitedUsers; ///< Users invited to this room
+
+  protected:
+    /**
+     * @brief Update or add a member to this room
+     *
+     * @param userId
+     * @param displayName
+     * @param avatarUrl
+     * @param membership One of: MEMBERSHIP_JOIN, MEMBERSHIP_INVITE
+     */
+    void updateMember(const QString &          userId,
+                      const QString &          displayName,
+                      const QString &          avatarUrl,
+                      EventContent::Membership membership);
+
+  public slots:
+    /**
+     * @brief Process StateEvent and update Room accordingly
+     *
+     * @param event
+     */
+    void onStateEvent(StateEvent event);
+
+    /**
+     * @brief Process m.room.member events
+     *
+     * @param event
+     */
+    void onRoomMemberEvent(StateEvent event);
+
+  private:
+    QString m_roomId;
+};
+} // namespace Structs
+} // namespace MatrixCpp

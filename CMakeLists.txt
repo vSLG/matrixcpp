@@ -25,6 +25,7 @@ add_library(${PROJECT}
     src/Responses/Responses.cpp
     
     include/${PROJECT}/Client.hpp
+    include/${PROJECT}/Structs.hpp
     include/${PROJECT}/Responses.hpp)
 
 target_link_libraries(${PROJECT}
