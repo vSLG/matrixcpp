@@ -18,9 +18,9 @@
 #include <QUrl>
 #include <QUrlQuery>
 
-#include "MatrixCpp/Structs.hpp"
-#include "export.hpp"
 #include <MatrixCpp/Responses.hpp>
+#include <MatrixCpp/Types.hpp>
+#include <MatrixCpp/export.hpp>
 
 namespace MatrixCpp {
 
@@ -162,7 +162,7 @@ class PUBLIC Client : public QObject {
     // Public variables
 
     QUrl homeserverUrl; ///< Current homeserver URL this Client is associated
-    QMap<QString, Structs::Room *> rooms; ///< Rooms this Client is associated
+    QMap<QString, Types::Room *> rooms; ///< Rooms this Client is associated
 
   signals:
     /**
@@ -198,8 +198,7 @@ class PUBLIC Client : public QObject {
      *
      * @param roomsUpdates
      */
-    void
-    onRoomJoinUpdate(const QMap<QString, Structs::RoomUpdate> &roomsUpdates);
+    void onRoomJoinUpdate(const QMap<QString, Types::RoomUpdate> &roomsUpdates);
 
   private:
     /**

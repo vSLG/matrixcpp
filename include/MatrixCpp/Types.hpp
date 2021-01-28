@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
- * @file Structs.hpp
+ * @file Types.hpp
  * @author vslg (slgf@protonmail.ch)
  * @brief Declares many Matrix-related data structures
  * @version 0.1
@@ -16,7 +16,6 @@
 #include <QVariant>
 
 #include <MatrixCpp/export.hpp>
-#include <qobject.h>
 
 /**
  * @brief Generates basic header for specified subclass
@@ -57,7 +56,7 @@ namespace MatrixCpp {
 // We cannot include Client.hpp here, so forward declaration
 class Client;
 
-namespace Structs {
+namespace Types {
 
 // Forward declaration
 class PUBLIC MatrixObj;
@@ -65,6 +64,7 @@ class PUBLIC Event;
 class PUBLIC UnsignedData;
 class PUBLIC EventContent;
 class PUBLIC CreateContent;
+class PUBLIC NameContent;
 class PUBLIC RoomEvent;
 class PUBLIC StateEvent;
 class PUBLIC StrippedStateEvent;
@@ -440,68 +440,8 @@ class PUBLIC User : public QObject {
     QString displayName; ///< User display name, if any
     QString avatarUrl;   ///< User avatar URL, if any
 };
-
-/**
- * @brief A Matrix room, used by Client to store Room information
- *
- */
-class PUBLIC Room : public QObject {
-    Q_OBJECT
-
-  public:
-    /**
-     * @brief Construct a new Room
-     *
-     * @param roomId
-     * @param client The Client this Room is registered
-     */
-    Room(const QString &roomId, Client *client = nullptr);
-
-    /**
-     * @brief Returns Room's name
-     *
-     * @return QString
-     */
-    QString name() const;
-
-    QString               roomId;       ///< This Room's ID
-    QMap<QString, User *> users;        ///< Users this Room has
-    QMap<QString, User *> invitedUsers; ///< Users invited to this Room
-    User *                creator;      ///< The creator of this Room
-    bool federate = true; ///< Whether users on other servers can join this Room
-
-  protected:
-    /**
-     * @brief Update or add a member to this room
-     *
-     * @param userId
-     * @param displayName
-     * @param avatarUrl
-     * @param membership One of: MEMBERSHIP_JOIN, MEMBERSHIP_INVITE
-     */
-    void updateMember(
-        const QString &          userId,
-        const QString &          displayName = "",
-        const QString &          avatarUrl   = "",
-        EventContent::Membership membership  = EventContent::MEMBERSHIP_JOIN);
-
-  public slots:
-    /**
-     * @brief Process StateEvent and update Room accordingly
-     *
-     * @param event
-     */
-    void onEvent(RoomEvent event);
-
-    /**
-     * @brief Process m.room.member events
-     *
-     * @param event
-     */
-    void onRoomMemberEvent(StateEvent event);
-
-  private:
-    QString m_name;
-};
-} // namespace Structs
+} // namespace Types
 } // namespace MatrixCpp
+
+// Include other classes
+#include <MatrixCpp/Room.hpp>

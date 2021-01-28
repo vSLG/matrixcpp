@@ -19,13 +19,17 @@ find_package(Olm REQUIRED)
 
 add_library(${PROJECT}
     src/Client.cpp
-    src/Structs.cpp
+    src/Types.cpp
+    src/Room.cpp
 
     src/Responses/ResponseFuture.cpp
     src/Responses/Responses.cpp
+
+    src/Events/RoomEvents.cpp
     
     include/${PROJECT}/Client.hpp
-    include/${PROJECT}/Structs.hpp
+    include/${PROJECT}/Types.hpp
+    include/${PROJECT}/Room.hpp
     include/${PROJECT}/Responses.hpp)
 
 target_link_libraries(${PROJECT}

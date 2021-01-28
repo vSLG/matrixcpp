@@ -19,12 +19,10 @@
 
 #include <MatrixCpp/Client.hpp>
 #include <MatrixCpp/Responses.hpp>
-#include <MatrixCpp/Structs.hpp>
-#include <qdebug.h>
 
 using namespace MatrixCpp;
 using namespace MatrixCpp::Responses;
-using namespace MatrixCpp::Structs;
+using namespace MatrixCpp::Types;
 
 // Public definitions
 

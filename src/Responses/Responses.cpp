@@ -14,7 +14,7 @@
 #include <MatrixCpp/Responses.hpp>
 
 using namespace MatrixCpp::Responses;
-using namespace MatrixCpp::Structs;
+using namespace MatrixCpp::Types;
 
 /*
  * Response

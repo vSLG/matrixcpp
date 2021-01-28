@@ -15,7 +15,7 @@
 
 #include <QNetworkReply>
 
-#include <MatrixCpp/Structs.hpp>
+#include <MatrixCpp/Types.hpp>
 #include <MatrixCpp/export.hpp>
 
 /**
@@ -54,10 +54,10 @@ namespace MatrixCpp::Responses {
  * @brief A matrix server response
  *
  */
-class PUBLIC Response : public Structs::MatrixObj {
+class PUBLIC Response : public Types::MatrixObj {
   public:
     // Inherit constructors
-    using Structs::MatrixObj::MatrixObj;
+    using Types::MatrixObj::MatrixObj;
 
     /**
      * @brief Tell if Response is an error
@@ -199,25 +199,25 @@ class PUBLIC SyncResponse : public Response {
      */
     QString nextBatch;
 
-    Structs::Rooms rooms; ///< Updates to Rooms
+    Types::Rooms rooms; ///< Updates to Rooms
 
     /**
      * @brief The updates to the presence status of other users
      *
      */
-    QList<Structs::Event> presence;
+    QList<Types::Event> presence;
 
     /**
      * @brief The global private data created by this user
      *
      */
-    QList<Structs::Event> accountData;
+    QList<Types::Event> accountData;
 
     /**
      * @brief Information on the send-to-device messages for the client device
      *
      */
-    QList<Structs::Event> toDevice;
+    QList<Types::Event> toDevice;
 
     QVariantMap deviceLists; ///< Information on end-to-end device updates
 };
