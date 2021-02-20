@@ -21,11 +21,14 @@ add_library(${PROJECT}
     src/Client.cpp
     src/Types.cpp
     src/Room.cpp
+    src/Olm.cpp
 
     src/Responses/ResponseFuture.cpp
     src/Responses/Responses.cpp
 
     src/Events/RoomEvents.cpp
+
+    src/Olm.hpp
     
     include/${PROJECT}/Client.hpp
     include/${PROJECT}/Types.hpp

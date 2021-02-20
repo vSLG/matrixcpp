@@ -40,10 +40,10 @@ class PUBLIC Client : public QObject {
      * @param deviceId device_id to use with this Client
      * @param parent QObject parent, if any
      */
-    explicit Client(const QString &host,
+    /* explicit Client(const QString &host,
                     const QString &user     = "",
                     const QString &deviceId = "",
-                    QObject *      parent   = nullptr);
+                    QObject *      parent   = nullptr); */
 
     /**
      * @brief Construct a new Client object

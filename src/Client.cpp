@@ -30,18 +30,19 @@ Client::Client(const QUrl &   homeserverUrl,
                const QString &user,
                const QString &deviceId,
                QObject *      parent)
-    : Client(homeserverUrl.host(), user, deviceId, parent) {
+    : QObject(parent), m_userId(user), m_deviceId(deviceId),
+      homeserverUrl(homeserverUrl), m_nam(new QNetworkAccessManager(this)) {
 }
 
-Client::Client(const QString &host,
+/* Client::Client(const QString &host,
                const QString &user,
                const QString &deviceId,
                QObject *      parent)
-    : QObject(parent), m_userId(user), m_deviceId(deviceId) {
+    : Client(homeserverUrl.host(), user, deviceId, parent) {
     this->homeserverUrl.setHost(host);
-    this->homeserverUrl.setScheme("https"); // Always use https?
+    this->homeserverUrl.setScheme("http"); // Always use https?
     this->m_nam = new QNetworkAccessManager(this);
-}
+} */
 
 void Client::loadDiscovery() {
     // Simply invoke getDiscovery and wait for it
