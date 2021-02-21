@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
 /**
  * @file Utils.cpp
  * @author vslg (slgf@protonmail.ch)

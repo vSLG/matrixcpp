@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
 /**
  * @file Olm.cpp
  * @author vslg (slgf@protonmail.ch)
@@ -123,4 +125,22 @@ QString Olm::deviceKeys() {
 
     free(keys);
     return this->m_deviceKeys;
+}
+
+QString Olm::sign(QString message) {
+    int         signSize = olm_account_signature_length(this->m_account);
+    char *      sign     = (char *) malloc(signSize);
+    std::string msg      = message.toStdString();
+
+    if (olm_account_sign(
+            this->m_account, msg.c_str(), msg.length(), sign, signSize) ==
+        olm_error()) {
+        emit this->olmError(QString("OLM Could not get identity keys: %1")
+                                .arg(olm_account_last_error(this->m_account)));
+        return "";
+    }
+
+    QString signature = sign;
+    free(sign);
+    return signature;
 }

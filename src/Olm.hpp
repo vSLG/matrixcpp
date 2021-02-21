@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
 /**
  * @file Olm.hpp
  * @author vslg (slgf@protonmail.ch)
@@ -67,6 +69,14 @@ class Olm : public QObject, public JsonFile {
      *
      */
     void load();
+
+    /**
+     * @brief Signs a message with the ed25519 key for this account
+     *
+     * @param message
+     * @return QString The signature
+     */
+    QString sign(QString message);
 
   private:
     OlmAccount *m_account = nullptr;
