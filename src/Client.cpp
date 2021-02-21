@@ -26,12 +26,9 @@ using namespace MatrixCpp::Types;
 
 // Public definitions
 
-Client::Client(const QUrl &   homeserverUrl,
-               const QString &user,
-               const QString &deviceId,
-               QObject *      parent)
-    : QObject(parent), m_userId(user), m_deviceId(deviceId),
-      homeserverUrl(homeserverUrl), m_nam(new QNetworkAccessManager(this)) {
+Client::Client(const QUrl &homeserverUrl, QObject *parent)
+    : QObject(parent), homeserverUrl(homeserverUrl),
+      m_nam(new QNetworkAccessManager(this)) {
 }
 
 /* Client::Client(const QString &host,
@@ -53,7 +50,7 @@ void Client::restore(const QString &userId,
                      const QString &deviceId,
                      const QString &accessToken) {
     this->m_userId      = userId;
-    this->m_deviceId    = deviceId;
+    this->deviceId      = deviceId;
     this->m_accessToken = accessToken;
 }
 
@@ -150,10 +147,6 @@ ResponseFuture *Client::sync(const QString &filter,
 
 QString Client::userId() const {
     return this->m_userId;
-}
-
-QString Client::deviceId() const {
-    return this->m_deviceId;
 }
 
 QString Client::accessToken() const {

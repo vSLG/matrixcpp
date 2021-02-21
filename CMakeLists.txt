@@ -22,6 +22,7 @@ add_library(${PROJECT}
     src/Types.cpp
     src/Room.cpp
     src/Olm.cpp
+    src/Utils.cpp
 
     src/Responses/ResponseFuture.cpp
     src/Responses/Responses.cpp

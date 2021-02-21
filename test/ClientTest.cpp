@@ -4,10 +4,9 @@
 #include <QUrlQuery>
 #include <QtTest/QtTest>
 
+#include "../src/Olm.hpp"
 #include <MatrixCpp/Client.hpp>
 #include <MatrixCpp/Responses.hpp>
-#include <cstdlib>
-#include <olm/olm.h>
 
 using namespace MatrixCpp;
 using namespace MatrixCpp::Responses;
@@ -19,30 +18,6 @@ class ClientTest : public QObject {
     void initTestCase() {
         // Use path provided by CMake
         QFile accFile("@ACCOUNT_INFO@");
-
-        OlmAccount *account = olm_account(malloc(olm_account_size()));
-        qDebug() << olm_account_last_error(account);
-
-        int            randSize    = sizeof(rand());
-        unsigned char *randomBytes = (unsigned char *) malloc(randSize * 64);
-
-        srand(time(NULL));
-
-        for (int i = 0; i < 64; i++)
-            randomBytes[i * randSize] = rand();
-
-        olm_create_account(account, randomBytes, randSize * 64);
-        qDebug() << olm_account_last_error(account);
-
-        free(randomBytes);
-
-        int   size = olm_account_identity_keys_length(account);
-        char *keys = (char *) malloc(size);
-
-        olm_account_identity_keys(account, keys, size);
-        qDebug() << olm_account_last_error(account);
-        qDebug() << keys;
-        free(keys);
 
         if (!accFile.exists())
             qFatal(
@@ -62,6 +37,9 @@ class ClientTest : public QObject {
 
         client = new Client(QUrl(parts[0]));
         client->restore(parts[1], parts[2], parts[3]);
+        Crypto::Olm olm(client);
+        qDebug() << olm.deviceKeys().toStdString().c_str();
+        qDebug() << olm.deviceKeys().toStdString().c_str();
         client->loadDiscovery();
     }
 
@@ -99,11 +77,11 @@ class ClientTest : public QObject {
             qFatal("Failed to log in");
 
         QVERIFY(!client->userId().isEmpty());
-        QVERIFY(!client->deviceId().isEmpty());
+        QVERIFY(!client->deviceId.isEmpty());
         QVERIFY(!client->accessToken().isEmpty());
 
         qInfo() << "Client user id:" << client->userId();
-        qInfo() << "Client device id:" << client->deviceId();
+        qInfo() << "Client device id:" << client->deviceId;
         qInfo() << "Client homeserver:" << client->homeserverUrl;
     }
 

@@ -13,8 +13,8 @@
 
 #pragma once
 
+#include <QDir>
 #include <QNetworkAccessManager>
-#include <QObject>
 #include <QUrl>
 #include <QUrlQuery>
 
@@ -32,14 +32,14 @@ class PUBLIC Client : public QObject {
     Q_OBJECT
 
   public:
-    /**
-     * @brief Construct a new Client object
-     *
-     * @param host Homeserver host
-     * @param user Fully qualified or local user_id for this Client
-     * @param deviceId device_id to use with this Client
-     * @param parent QObject parent, if any
-     */
+    //**
+    // * @brief Construct a new Client object
+    // *
+    // * @param host Homeserver host
+    // * @param user Fully qualified or local user_id for this Client
+    // * @param deviceId device_id to use with this Client
+    // * @param parent QObject parent, if any
+    // */
     /* explicit Client(const QString &host,
                     const QString &user     = "",
                     const QString &deviceId = "",
@@ -49,14 +49,9 @@ class PUBLIC Client : public QObject {
      * @brief Construct a new Client object
      *
      * @param homeserverUrl Homeserver URL for this client
-     * @param user Fully qualified or local user_id for this Client
-     * @param deviceId device_id to use with this Client
      * @param parent QObject parent, if any
      */
-    explicit Client(const QUrl &   homeserverUrl,
-                    const QString &user     = "",
-                    const QString &deviceId = "",
-                    QObject *      parent   = nullptr);
+    explicit Client(const QUrl &homeserverUrl, QObject *parent = nullptr);
 
     /**
      * @brief (sync) Request for well_known and update the client
@@ -146,23 +141,37 @@ class PUBLIC Client : public QObject {
     QString userId() const;
 
     /**
-     * @brief Gets the device_id
-     *
-     * @return QString
-     */
-    QString deviceId() const;
-
-    /**
      * @brief Gets the access_token
      *
      * @return QString
      */
     QString accessToken() const;
 
+    /**
+     * @brief HTTP get request to specified path on homeserver
+     *
+     * @param path
+     * @param query Query data for request
+     * @return Responses::ResponseFuture
+     */
+    Responses::ResponseFuture *get(QString   path,
+                                   QUrlQuery query = QUrlQuery()) const;
+
+    /**
+     * @brief Sends POST JSON to specified path
+     *
+     * @param path
+     * @param data The data to be sent. Will be JSON encoded
+     * @return Responses::ResponseFuture
+     */
+    Responses::ResponseFuture *send(QString path, QVariant data) const;
+
     // Public variables
 
     QUrl homeserverUrl; ///< Current homeserver URL this Client is associated
-    QMap<QString, Types::Room *> rooms; ///< Rooms this Client is associated
+    QMap<QString, Types::Room *> rooms;    ///< Rooms this Client is associated
+    QString                      deviceId; ///< Device ID
+    QDir storeDir; ///< Store directory for encryption keys
 
   signals:
     /**
@@ -202,30 +211,12 @@ class PUBLIC Client : public QObject {
 
   private:
     /**
-     * @brief HTTP get request to specified path on homeserver
-     *
-     * @param path
-     * @return Responses::ResponseFuture
-     */
-    Responses::ResponseFuture *get(QString   path,
-                                   QUrlQuery query = QUrlQuery()) const;
-
-    /**
      * @brief HTTP get request to specified URL
      *
      * @param url
      * @return Responses::ResponseFuture
      */
     Responses::ResponseFuture *get(QUrl url) const;
-
-    /**
-     * @brief Sends POST JSON to specified path
-     *
-     * @param path
-     * @param data The data to be sent. Will be JSON encoded
-     * @return Responses::ResponseFuture
-     */
-    Responses::ResponseFuture *send(QString path, QVariant data) const;
 
     /**
      * @brief Sends POST JSON to specified URL
@@ -240,7 +231,6 @@ class PUBLIC Client : public QObject {
 
     QString m_userId;
     QString m_accessToken;
-    QString m_deviceId;
     QString m_nextBatch;
 };
 } // namespace MatrixCpp

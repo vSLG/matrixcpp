@@ -16,6 +16,8 @@
 
 #include <MatrixCpp/Client.hpp>
 
+#include "Utils.hpp"
+
 namespace MatrixCpp::Crypto {
 /**
  * @brief An abstraction to OlmAccount operations
@@ -24,7 +26,7 @@ namespace MatrixCpp::Crypto {
  *   - Saving OlmAccount to a JSON file
  *   - Encrypting/decrypting events
  */
-class Olm : public QObject {
+class Olm : public QObject, public JsonFile {
     Q_OBJECT
 
   public:
@@ -32,7 +34,6 @@ class Olm : public QObject {
      * @brief Construct a new Olm object
      *
      * @param client
-     * @param storeDir Directory for storing keys
      */
     explicit Olm(Client *client);
 
@@ -49,17 +50,27 @@ class Olm : public QObject {
      */
     QString deviceKeys();
 
-    /**
-     * @brief Save OlmAccount in the store dir
-     *
-     */
-    void save();
-
   signals:
     void olmError(QString error);
+
+  protected:
+    QVariant encode() override;
+
+    /**
+     * @brief Creates an Olm account related to this user
+     *
+     */
+    void create();
+
+    /**
+     * @brief Loads Olm account from disk
+     *
+     */
+    void load();
 
   private:
     OlmAccount *m_account = nullptr;
     QString     m_deviceKeys;
+    Client *    m_client = nullptr;
 };
 } // namespace MatrixCpp::Crypto
