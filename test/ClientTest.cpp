@@ -35,7 +35,7 @@ class ClientTest : public QObject {
 
         QList<QByteArray> parts = content.split(' ');
 
-        client = new Client(QUrl(parts[0]));
+        client = new Client(QUrl(parts[0]), this);
         client->restore(parts[1], parts[2], parts[3]);
         Crypto::Olm olm(client);
         qDebug() << olm.deviceKeys().toStdString().c_str();

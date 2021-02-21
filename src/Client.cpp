@@ -75,17 +75,17 @@ ResponseFuture *Client::getLoginTypes() const {
     return this->get("/_matrix/client/r0/login");
 }
 
-ResponseFuture *Client::login(QString password, QString token) {
+ResponseFuture *Client::login(QString userId, QString password, QString token) {
     QVariantMap loginData;
 
-    if (this->m_userId.isEmpty())
+    if (this->m_userId.isEmpty() && userId.isEmpty())
         throw std::runtime_error("Please set an user id");
 
     if (!password.isEmpty()) {
         QVariantMap identifier;
 
         identifier["type"] = "m.id.user";
-        identifier["user"] = this->m_userId;
+        identifier["user"] = this->m_userId.isEmpty() ? userId : this->m_userId;
 
         loginData["type"]       = "m.login.password";
         loginData["password"]   = password;
@@ -141,6 +141,21 @@ ResponseFuture *Client::sync(const QString &filter,
         });
 
     return future;
+}
+
+ResponseFuture *Client::send(QString path, QVariant data) const {
+    QUrl requestUrl = this->homeserverUrl;
+    requestUrl.setPath(path);
+
+    return this->send(requestUrl, data);
+}
+
+ResponseFuture *Client::get(QString path, QUrlQuery query) const {
+    QUrl requestUrl = this->homeserverUrl;
+    requestUrl.setPath(path);
+    requestUrl.setQuery(query);
+
+    return this->get(requestUrl);
 }
 
 // Getters & setters
@@ -205,14 +220,6 @@ void Client::onRoomJoinUpdate(const QMap<QString, RoomUpdate> &roomsUpdates) {
 
 // Private
 
-ResponseFuture *Client::get(QString path, QUrlQuery query) const {
-    QUrl requestUrl = this->homeserverUrl;
-    requestUrl.setPath(path);
-    requestUrl.setQuery(query);
-
-    return this->get(requestUrl);
-}
-
 ResponseFuture *Client::get(QUrl url) const {
     QNetworkRequest request(url);
 
@@ -225,13 +232,6 @@ ResponseFuture *Client::get(QUrl url) const {
     QObject::connect(this, SIGNAL(abortRequests()), reply, SLOT(abort()));
 
     return new ResponseFuture(reply);
-}
-
-ResponseFuture *Client::send(QString path, QVariant data) const {
-    QUrl requestUrl = this->homeserverUrl;
-    requestUrl.setPath(path);
-
-    return this->send(requestUrl, data);
 }
 
 ResponseFuture *Client::send(QUrl url, QVariant data) const {

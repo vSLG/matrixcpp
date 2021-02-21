@@ -104,14 +104,15 @@ class PUBLIC Client : public QObject {
 
     /**
      * @brief (async) Logs in to the specified account with password OR
-     * access_token
+     * token
      *
+     * @param userId Local or fully qualified user ID
      * @param password Password for the user
-     * @param accessToken Access token for the user
+     * @param token Token for the user
      * @return Responses::ResponseFuture
      */
-    Responses::ResponseFuture *login(QString password    = "",
-                                     QString accessToken = "");
+    Responses::ResponseFuture *
+    login(QString userId = "", QString password = "", QString token = "");
 
     /**
      * @brief (async) Performs a sync request. This will also update the Client
@@ -131,22 +132,6 @@ class PUBLIC Client : public QObject {
                                     Presence       presence  = PRESENCE_ONLINE,
                                     int            timeout   = 0);
 
-    // Getters & setters
-
-    /**
-     * @brief Gets the user_id
-     *
-     * @return QString
-     */
-    QString userId() const;
-
-    /**
-     * @brief Gets the access_token
-     *
-     * @return QString
-     */
-    QString accessToken() const;
-
     /**
      * @brief HTTP get request to specified path on homeserver
      *
@@ -165,6 +150,22 @@ class PUBLIC Client : public QObject {
      * @return Responses::ResponseFuture
      */
     Responses::ResponseFuture *send(QString path, QVariant data) const;
+
+    // Getters & setters
+
+    /**
+     * @brief Gets the user_id
+     *
+     * @return QString
+     */
+    QString userId() const;
+
+    /**
+     * @brief Gets the access_token
+     *
+     * @return QString
+     */
+    QString accessToken() const;
 
     // Public variables
 
