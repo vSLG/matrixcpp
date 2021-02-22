@@ -26,8 +26,8 @@ using namespace MatrixCpp::Types;
 
 // Public definitions
 
-Client::Client(const QUrl &homeserverUrl, QObject *parent)
-    : QObject(parent), homeserverUrl(homeserverUrl),
+Client::Client(const QUrl &homeserverUrl, bool encryption, QObject *parent)
+    : QObject(parent), homeserverUrl(homeserverUrl), m_encryption(encryption),
       m_nam(new QNetworkAccessManager(this)) {
 }
 
@@ -115,8 +115,6 @@ ResponseFuture *Client::sync(const QString &filter,
                              int            timeout) {
     QUrlQuery query;
 
-    query.addQueryItem("access_token", this->m_accessToken);
-
     if (!filter.isEmpty())
         query.addQueryItem("filter", filter);
 
@@ -143,7 +141,7 @@ ResponseFuture *Client::sync(const QString &filter,
     return future;
 }
 
-ResponseFuture *Client::send(QString path, QVariant data) const {
+ResponseFuture *Client::send(QString path, QVariantMap data) const {
     QUrl requestUrl = this->homeserverUrl;
     requestUrl.setPath(path);
 
@@ -226,6 +224,10 @@ ResponseFuture *Client::get(QUrl url) const {
     request.setHeader(QNetworkRequest::UserAgentHeader,
                       APP_NAME " " APP_VERSION);
 
+    if (!this->m_accessToken.isEmpty())
+        request.setRawHeader("Authorization",
+                             "Bearer " + this->m_accessToken.toUtf8());
+
     qDebug() << "GET" << url.path();
     QNetworkReply *reply = this->m_nam->get(request);
 
@@ -234,16 +236,20 @@ ResponseFuture *Client::get(QUrl url) const {
     return new ResponseFuture(reply);
 }
 
-ResponseFuture *Client::send(QUrl url, QVariant data) const {
+ResponseFuture *Client::send(QUrl url, QVariantMap data) const {
     QNetworkRequest request(url);
 
     request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
     request.setHeader(QNetworkRequest::UserAgentHeader,
                       APP_NAME " " APP_VERSION);
 
+    if (!this->m_accessToken.isEmpty())
+        request.setRawHeader("Authorization",
+                             "Bearer " + this->m_accessToken.toUtf8());
+
     QByteArray postData = QJsonDocument::fromVariant(data).toJson();
 
-    qDebug() << "POST" << url;
+    qDebug() << "POST" << url.path();
     QNetworkReply *reply = this->m_nam->post(request, postData);
 
     QObject::connect(this, SIGNAL(abortRequests()), reply, SLOT(abort()));

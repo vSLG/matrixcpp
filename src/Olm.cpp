@@ -11,13 +11,18 @@
  *
  */
 
-#include "Olm.hpp"
-#include <cstring>
+#include <QJsonDocument>
 #include <olm/olm.h>
-#include <stdexcept>
+#include <qjsondocument.h>
+
+#include "MatrixCpp/Responses.hpp"
+#include "Olm.hpp"
+#include "src/Utils.hpp"
 
 using namespace MatrixCpp;
 using namespace MatrixCpp::Crypto;
+using namespace MatrixCpp::Responses;
+using namespace MatrixCpp::Utils;
 
 Olm::Olm(Client *client)
     : QObject(client),
@@ -45,6 +50,8 @@ Olm::~Olm() {
 QVariant Olm::encode() {
     QVariantHash json;
 
+    json["device_keys_uploaded"] = this->deviceKeysUploaded;
+
     int         pickledLenght = olm_pickle_account_length(this->m_account);
     char *      pickled       = (char *) malloc(pickledLenght);
     std::string key           = this->m_client->accessToken().toStdString();
@@ -69,15 +76,9 @@ QVariant Olm::encode() {
 void Olm::create() {
     qDebug() << "OLM Creating account for" << this->m_client->userId();
 
-    int            randSize    = sizeof(rand());
-    unsigned char *randomBytes = (unsigned char *) malloc(randSize * 64);
-
-    srand(time(NULL));
-
-    for (int i = 0; i < 64; i++)
-        randomBytes[i * randSize] = rand();
-
-    int ret = olm_create_account(this->m_account, randomBytes, randSize * 64);
+    int      randomSize  = olm_create_account_random_length(this->m_account);
+    uint8_t *randomBytes = Utils::randomBytes(randomSize);
+    int      ret = olm_create_account(this->m_account, randomBytes, randomSize);
 
     free(randomBytes);
 
@@ -90,9 +91,12 @@ void Olm::load() {
     qDebug() << "OLM Loading account for" << this->m_client->userId()
              << "from store";
 
-    QVariantHash json       = this->read().toHash();
-    std::string  key        = this->m_client->accessToken().toStdString();
-    std::string  pickledStr = json["olm"].toString().toStdString();
+    QVariantMap json = this->read().toMap();
+
+    this->deviceKeysUploaded = json["device_keys_uploaded"].toBool();
+
+    std::string key        = this->m_client->accessToken().toStdString();
+    std::string pickledStr = json["olm"].toString().toStdString();
 
     // Because olm_unpickle_account destroys pickled buffer, we need to manually
     // allocate the buffer. We cannot modify std::string internals.
@@ -143,4 +147,132 @@ QString Olm::sign(QString message) {
     QString signature = sign;
     free(sign);
     return signature;
+}
+
+ResponseFuture *Olm::sendKeys() {
+    QVariantMap data;
+    bool        uploadingDeviceKeys = false;
+
+    if (!this->deviceKeysUploaded) {
+        data["device_keys"] = this->serializeDeviceKeys();
+        qDebug("OLM uploading device keys for the first time");
+        uploadingDeviceKeys = true;
+    } else if (this->oneTimeKeysToUploadCount() > 0)
+        data["one_time_keys"] =
+            this->serializeOneTimeKeys(this->oneTimeKeysToUploadCount());
+    else
+        throw std::runtime_error(
+            "Trying to upload keys when there is none to upload");
+
+    ResponseFuture *future =
+        this->m_client->send("/_matrix/client/r0/keys/upload", data);
+
+    connect(future, &ResponseFuture::responseComplete, [=](Response response) {
+        qDebug() << response.getJson().toStdString().c_str();
+
+        if (response.isError() || response.isBroken())
+            return;
+
+        if (uploadingDeviceKeys)
+            // Fisrt time sending device keys
+            this->deviceKeysUploaded = true;
+        else
+            // Else we are uploading one time keys. Mark them as published,
+            // because upload was successful
+            olm_account_mark_keys_as_published(this->m_account);
+
+        this->save();
+    });
+
+    return future;
+}
+
+int Olm::maxOneTimeKeys() {
+    if (this->m_maxOneTimeKeys > 0)
+        return this->m_maxOneTimeKeys;
+
+    this->m_maxOneTimeKeys =
+        olm_account_max_number_of_one_time_keys(this->m_account);
+
+    return this->m_maxOneTimeKeys;
+}
+
+QVariantMap Olm::serializeDeviceKeys() {
+    QVariantMap deviceKeys, keys, signatures, selfSignature;
+    QString     keysStr = this->deviceKeys();
+
+    QString userId   = this->m_client->userId();
+    QString deviceId = this->m_client->deviceId;
+
+    keys = QJsonDocument::fromJson(keysStr.toUtf8()).toVariant().toMap();
+    keys["curve25519:" + deviceId] = keys.take("curve25519");
+    keys["ed25519:" + deviceId]    = keys.take("ed25519");
+
+    deviceKeys["user_id"]   = userId;
+    deviceKeys["device_id"] = deviceId;
+    deviceKeys["algorithms"] =
+        QStringList({"m.olm.curve25519-aes-sha256", "m.megolm.v1.aes-sha"});
+    deviceKeys["keys"] = keys;
+
+    selfSignature["ed25519:" + deviceId] =
+        this->sign(canonicalJson(deviceKeys));
+
+    signatures[userId]       = selfSignature;
+    deviceKeys["signatures"] = signatures;
+
+    return deviceKeys;
+}
+
+QVariantMap Olm::serializeOneTimeKeys(int count) {
+    assert(count > 0);
+
+    int randomSize = olm_account_generate_one_time_keys_random_length(
+        this->m_account, count);
+    uint8_t *randomBytes = Utils::randomBytes(randomSize);
+
+    olm_check_error(olm_account_generate_one_time_keys(
+                        this->m_account, count, randomBytes, randomSize),
+                    "could not generate one time keys");
+
+    free(randomBytes);
+
+    int   keysSize = olm_account_one_time_keys_length(this->m_account);
+    char *keysStr  = (char *) malloc(keysSize);
+
+    olm_check_error(
+        olm_account_one_time_keys(this->m_account, keysStr, keysSize),
+        "could not get the one time keys");
+
+    QVariantMap keys = QJsonDocument::fromJson(keysStr)
+                           .toVariant()
+                           .toMap()["curve25519"]
+                           .toMap();
+
+    free(keysStr);
+
+    QVariantMap data;
+
+    QVariantMap::const_iterator it = keys.constBegin();
+    for (; it != keys.constEnd(); ++it) {
+        QVariantMap key, signatures, selfSignature;
+        key["key"] = it.value();
+
+        selfSignature["ed25519:" + this->m_client->deviceId] =
+            this->sign(canonicalJson(key));
+
+        signatures[this->m_client->userId()]  = selfSignature;
+        key["signatures"]                     = signatures;
+        data["signed_curve25519:" + it.key()] = key;
+    }
+
+    qDebug() << QJsonDocument::fromVariant(data).toJson().toStdString().c_str();
+
+    return data;
+}
+
+int Olm::oneTimeKeysToUploadCount() {
+    if (this->uploadedOneTimeKeys < 0)
+        return -1;
+
+    return this->maxOneTimeKeys() / 2 - this->uploadedOneTimeKeys;
 }

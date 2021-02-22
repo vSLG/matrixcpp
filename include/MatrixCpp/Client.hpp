@@ -49,9 +49,12 @@ class PUBLIC Client : public QObject {
      * @brief Construct a new Client object
      *
      * @param homeserverUrl Homeserver URL for this client
+     * @param encryption Whether to enable or not encryption for this client
      * @param parent QObject parent, if any
      */
-    explicit Client(const QUrl &homeserverUrl, QObject *parent = nullptr);
+    explicit Client(const QUrl &homeserverUrl,
+                    bool        encryption = true,
+                    QObject *   parent     = nullptr);
 
     /**
      * @brief (sync) Request for well_known and update the client
@@ -149,7 +152,7 @@ class PUBLIC Client : public QObject {
      * @param data The data to be sent. Will be JSON encoded
      * @return Responses::ResponseFuture
      */
-    Responses::ResponseFuture *send(QString path, QVariant data) const;
+    Responses::ResponseFuture *send(QString path, QVariantMap data) const;
 
     // Getters & setters
 
@@ -226,12 +229,13 @@ class PUBLIC Client : public QObject {
      * @param data The data to be sent. Will be JSON encoded
      * @return Responses::ResponseFuture
      */
-    Responses::ResponseFuture *send(QUrl url, QVariant data) const;
+    Responses::ResponseFuture *send(QUrl url, QVariantMap data) const;
 
     QNetworkAccessManager *m_nam;
 
     QString m_userId;
     QString m_accessToken;
     QString m_nextBatch;
+    bool    m_encryption;
 };
 } // namespace MatrixCpp

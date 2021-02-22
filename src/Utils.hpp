@@ -52,4 +52,23 @@ class JsonFile {
      */
     virtual QVariant encode() = 0;
 };
+
+// Anonymous functions
+namespace Utils {
+/**
+ * @brief Turn specified map into canonical JSON string
+ *
+ * @param json
+ * @return QByteArray
+ */
+QByteArray canonicalJson(QVariantMap json);
+
+/**
+ * @brief Generates random bytes of len size
+ *
+ * @param len
+ * @return uint8_t* Random bytes pointer. Must be manually destroyed
+ */
+uint8_t *randomBytes(size_t len);
+} // namespace Utils
 } // namespace MatrixCpp

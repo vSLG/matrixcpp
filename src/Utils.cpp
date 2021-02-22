@@ -17,6 +17,9 @@
 #include "Utils.hpp"
 
 using namespace MatrixCpp;
+using namespace MatrixCpp::Utils;
+
+static bool m_srand = false;
 
 // JsonFile
 
@@ -85,4 +88,35 @@ QVariant JsonFile::read() {
                                  error.errorString().toStdString());
 
     return doc.toVariant();
+}
+
+// Namespace Utils
+
+QByteArray Utils::canonicalJson(QVariantMap json) {
+    return QJsonDocument::fromVariant(json).toJson(QJsonDocument::Compact);
+}
+
+uint8_t *Utils::randomBytes(size_t len) {
+    uint8_t *random = (uint8_t *) malloc(len);
+
+    if (!random)
+        throw std::runtime_error("Failed to allocate " + std::to_string(len) +
+                                 "bytes");
+
+    int i         = 0;
+    int randSize  = sizeof(rand());
+    int totalInts = len / randSize;
+    int remainder = len % randSize;
+
+    if (!m_srand) {
+        srand(time(NULL));
+        m_srand = true;
+    }
+
+    for (i = 0; i < totalInts; i++)
+        random[i * randSize] = rand();
+
+    random[i] = rand() >> (remainder * 8);
+
+    return random;
 }

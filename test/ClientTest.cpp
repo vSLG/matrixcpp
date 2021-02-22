@@ -35,12 +35,11 @@ class ClientTest : public QObject {
 
         QList<QByteArray> parts = content.split(' ');
 
-        client = new Client(QUrl(parts[0]), this);
+        client = new Client(QUrl(parts[0]), true, this);
         client->restore(parts[1], parts[2], parts[3]);
-        Crypto::Olm olm(client);
-        qDebug() << olm.deviceKeys().toStdString().c_str();
-        qDebug() << olm.deviceKeys().toStdString().c_str();
         client->loadDiscovery();
+        Crypto::Olm *olm = new Crypto::Olm(client);
+        // delete olm;
     }
 
     void serverVersion() {
@@ -96,11 +95,12 @@ class ClientTest : public QObject {
 
         QVERIFY(!response.nextBatch.isEmpty());
 
+        // qDebug() << response.getJson().toStdString().c_str();
+
         do {
             SyncResponse response =
                 client
-                    ->sync(
-                        "", "", false, MatrixCpp::Client::PRESENCE_ONLINE, 7000)
+                    ->sync("", "", false, MatrixCpp::Client::PRESENCE_ONLINE, 0)
                     ->result();
         } while (0);
     }

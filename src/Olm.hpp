@@ -20,6 +20,12 @@
 
 #include "Utils.hpp"
 
+#define olm_check_error(function, msg) \
+    if (function == olm_error())       \
+        throw std::runtime_error(      \
+            "OLM " msg ": " +          \
+            std::string(olm_account_last_error(this->m_account)));
+
 namespace MatrixCpp::Crypto {
 /**
  * @brief An abstraction to OlmAccount operations
@@ -52,6 +58,20 @@ class Olm : public QObject, public JsonFile {
      */
     QString deviceKeys();
 
+    /**
+     * @brief Send identity and one time keys to the server, as needed
+     *
+     * @return Responses::ResponseFuture*
+     */
+    Responses::ResponseFuture *sendKeys();
+
+    /**
+     * @brief Max one time keys this account can handle
+     *
+     * @return int
+     */
+    int maxOneTimeKeys();
+
   signals:
     void olmError(QString error);
 
@@ -78,9 +98,18 @@ class Olm : public QObject, public JsonFile {
      */
     QString sign(QString message);
 
+    bool deviceKeysUploaded = false; ///< Whether keys have been uploaded or not
+    int  uploadedOneTimeKeys =
+        -1; ///< Total uploaded one time keys we have track of
+
   private:
+    QVariantMap serializeDeviceKeys();
+    QVariantMap serializeOneTimeKeys(int count);
+    int         oneTimeKeysToUploadCount();
+
     OlmAccount *m_account = nullptr;
     QString     m_deviceKeys;
-    Client *    m_client = nullptr;
+    Client *    m_client         = nullptr;
+    int         m_maxOneTimeKeys = -1;
 };
 } // namespace MatrixCpp::Crypto
