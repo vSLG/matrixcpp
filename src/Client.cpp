@@ -20,9 +20,12 @@
 #include <MatrixCpp/Client.hpp>
 #include <MatrixCpp/Responses.hpp>
 
+#include "Olm.hpp"
+
 using namespace MatrixCpp;
 using namespace MatrixCpp::Responses;
 using namespace MatrixCpp::Types;
+using namespace MatrixCpp::Crypto;
 
 // Public definitions
 
@@ -52,6 +55,9 @@ void Client::restore(const QString &userId,
     this->m_userId      = userId;
     this->deviceId      = deviceId;
     this->m_accessToken = accessToken;
+
+    if (this->m_encryption)
+        this->m_olm = new Olm(this);
 }
 
 // Api routines
@@ -113,6 +119,10 @@ ResponseFuture *Client::sync(const QString &filter,
                              bool           fullState,
                              Presence       presence,
                              int            timeout) {
+    // Send keys if not sent yet and wait for it
+    if (this->m_olm && !this->m_olm->deviceKeysUploaded)
+        this->m_olm->sendKeys()->result();
+
     QUrlQuery query;
 
     if (!filter.isEmpty())
@@ -195,6 +205,18 @@ void Client::onSyncResponse(SyncResponse response) {
 
     if (!response.rooms.join.isEmpty())
         this->onRoomJoinUpdate(response.rooms.join);
+
+    // From now on handle olm stuff
+    if (!this->m_encryption)
+        return;
+
+    this->m_olm->uploadedOneTimeKeys =
+        response.deviceOneTimeKeysCount["signed_curve25519"].toInt();
+
+    // Upload one time keys if needed
+    if (this->m_olm->shouldUploadOneTimeKeys())
+        this->m_olm->sendKeys()
+            ->result(); // We should wait until next sync call
 }
 
 void Client::onRoomJoinUpdate(const QMap<QString, RoomUpdate> &roomsUpdates) {

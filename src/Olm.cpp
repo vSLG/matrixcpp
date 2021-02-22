@@ -157,10 +157,11 @@ ResponseFuture *Olm::sendKeys() {
         data["device_keys"] = this->serializeDeviceKeys();
         qDebug("OLM uploading device keys for the first time");
         uploadingDeviceKeys = true;
-    } else if (this->oneTimeKeysToUploadCount() > 0)
-        data["one_time_keys"] =
-            this->serializeOneTimeKeys(this->oneTimeKeysToUploadCount());
-    else
+    } else if (this->oneTimeKeysToUploadCount() > 0) {
+        int oneTimeKeysCount = this->oneTimeKeysToUploadCount();
+        qDebug() << "OLM uploading" << oneTimeKeysCount << "one time keys";
+        data["one_time_keys"] = this->serializeOneTimeKeys(oneTimeKeysCount);
+    } else
         throw std::runtime_error(
             "Trying to upload keys when there is none to upload");
 
@@ -168,8 +169,6 @@ ResponseFuture *Olm::sendKeys() {
         this->m_client->send("/_matrix/client/r0/keys/upload", data);
 
     connect(future, &ResponseFuture::responseComplete, [=](Response response) {
-        qDebug() << response.getJson().toStdString().c_str();
-
         if (response.isError() || response.isBroken())
             return;
 
@@ -185,6 +184,10 @@ ResponseFuture *Olm::sendKeys() {
     });
 
     return future;
+}
+
+bool Olm::shouldUploadOneTimeKeys() {
+    return this->oneTimeKeysToUploadCount() > 0;
 }
 
 int Olm::maxOneTimeKeys() {
@@ -264,8 +267,6 @@ QVariantMap Olm::serializeOneTimeKeys(int count) {
         key["signatures"]                     = signatures;
         data["signed_curve25519:" + it.key()] = key;
     }
-
-    qDebug() << QJsonDocument::fromVariant(data).toJson().toStdString().c_str();
 
     return data;
 }

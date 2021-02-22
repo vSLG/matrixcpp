@@ -38,8 +38,6 @@ class ClientTest : public QObject {
         client = new Client(QUrl(parts[0]), true, this);
         client->restore(parts[1], parts[2], parts[3]);
         client->loadDiscovery();
-        Crypto::Olm *olm = new Crypto::Olm(client);
-        // delete olm;
     }
 
     void serverVersion() {

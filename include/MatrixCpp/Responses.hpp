@@ -220,5 +220,6 @@ class PUBLIC SyncResponse : public Response {
     QList<Types::Event> toDevice;
 
     QVariantMap deviceLists; ///< Information on end-to-end device updates
+    QVariantMap deviceOneTimeKeysCount; ///< Amount of uploaded one time keys
 };
 } // namespace MatrixCpp::Responses

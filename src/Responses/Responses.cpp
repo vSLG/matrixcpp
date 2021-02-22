@@ -132,4 +132,6 @@ void SyncResponse::parseData() {
         this->toDevice.append(event);
 
     this->deviceLists = dataMap["device_lists"].toMap();
+    this->deviceOneTimeKeysCount =
+        dataMap["device_one_time_keys_count"].toMap();
 }

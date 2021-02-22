@@ -72,6 +72,26 @@ class Olm : public QObject, public JsonFile {
      */
     int maxOneTimeKeys();
 
+    /**
+     * @brief Signs a message with the ed25519 key for this account
+     *
+     * @param message
+     * @return QString The signature
+     */
+    QString sign(QString message);
+
+    /**
+     * @brief Whether we should or not upload one time keys
+     *
+     * @return true
+     * @return false
+     */
+    bool shouldUploadOneTimeKeys();
+
+    bool deviceKeysUploaded = false; ///< Whether keys have been uploaded or not
+    int  uploadedOneTimeKeys =
+        -1; ///< Total uploaded one time keys we have track of
+
   signals:
     void olmError(QString error);
 
@@ -89,18 +109,6 @@ class Olm : public QObject, public JsonFile {
      *
      */
     void load();
-
-    /**
-     * @brief Signs a message with the ed25519 key for this account
-     *
-     * @param message
-     * @return QString The signature
-     */
-    QString sign(QString message);
-
-    bool deviceKeysUploaded = false; ///< Whether keys have been uploaded or not
-    int  uploadedOneTimeKeys =
-        -1; ///< Total uploaded one time keys we have track of
 
   private:
     QVariantMap serializeDeviceKeys();

@@ -23,6 +23,10 @@
 #include <MatrixCpp/export.hpp>
 
 namespace MatrixCpp {
+// Fast forward private types
+namespace Crypto {
+class Olm;
+}
 
 /**
  * @brief A Matrix Client
@@ -233,9 +237,10 @@ class PUBLIC Client : public QObject {
 
     QNetworkAccessManager *m_nam;
 
-    QString m_userId;
-    QString m_accessToken;
-    QString m_nextBatch;
-    bool    m_encryption;
+    QString      m_userId;
+    QString      m_accessToken;
+    QString      m_nextBatch;
+    bool         m_encryption;
+    Crypto::Olm *m_olm = nullptr;
 };
 } // namespace MatrixCpp
