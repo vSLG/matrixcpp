@@ -47,7 +47,7 @@ void EventContent::parseData() {
  * NameContent
  */
 
-void NameContent::parseData() {
+void RoomNameContent::parseData() {
     QVariantMap dataMap = this->data.toMap();
 
     this->name = dataMap["name"].toString();

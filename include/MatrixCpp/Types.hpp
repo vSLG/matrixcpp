@@ -60,17 +60,25 @@ namespace Types {
 
 // Forward declaration
 class PUBLIC MatrixObj;
-class PUBLIC Event;
-class PUBLIC UnsignedData;
-class PUBLIC EventContent;
-class PUBLIC CreateContent;
-class PUBLIC NameContent;
-class PUBLIC RoomEvent;
-class PUBLIC StateEvent;
-class PUBLIC StrippedStateEvent;
+
+// Room related non-events
 class PUBLIC RoomUpdate;
 class PUBLIC RoomInvite;
 class PUBLIC Rooms;
+
+// Event has to be defined before the below
+class PUBLIC Event;
+
+// Event related classes
+class PUBLIC UnsignedData;
+class PUBLIC EventContent;
+class PUBLIC CreateContent;
+class PUBLIC RoomNameContent;
+
+// Events
+class PUBLIC RoomEvent;
+class PUBLIC StateEvent;
+class PUBLIC StrippedStateEvent;
 
 class PUBLIC Room;
 class PUBLIC User;
@@ -134,6 +142,85 @@ class PUBLIC MatrixObj {
     virtual void parseData() = 0;
 
     bool m_broken = false;
+};
+
+/**
+ * @brief A matrix Room object
+ *
+ */
+class PUBLIC RoomUpdate : public MatrixObj {
+    MATRIXOBJ_CONSTRUCTOR(RoomUpdate)
+
+  public:
+    /**
+     * @brief Information about the room which clients may need to correctly
+       render it to users
+     *
+     */
+    QVariantMap summary;
+
+    /**
+     * @brief Updates to the state, between the time indicated by the since
+       parameter, and the start of the timeline
+     *
+     */
+    QList<StateEvent> state;
+
+    /**
+     * @brief The timeline of messages and state changes in the room
+     *
+     */
+    QVariantMap timeline;
+
+    /**
+     * @brief The ephemeral events in the room that aren't recorded in the
+       timeline or state of the room. e.g. typing
+     *
+     */
+    QList<Event> ephemeral;
+
+    /**
+     * @brief The private data that this user has attached to this room
+     *
+     */
+    QList<Event> accountData;
+
+    /**
+     * @brief Counts of unread notifications for this room
+     *
+     */
+    QVariantMap unreadNotifications;
+};
+
+/**
+ * @brief A Room which user has been invited to
+ *
+ */
+class PUBLIC RoomInvite : public MatrixObj {
+    MATRIXOBJ_CONSTRUCTOR(RoomInvite)
+
+  public:
+    /**
+     * @brief The StrippedState events that form the invite state
+     *
+     */
+    QList<StrippedStateEvent> events;
+};
+
+/**
+ * @brief Contains rooms information. Returned on sync request
+ *
+ */
+class PUBLIC Rooms : public MatrixObj {
+    MATRIXOBJ_CONSTRUCTOR(Rooms)
+
+  public:
+    Rooms(){};
+
+    QMap<QString, RoomUpdate> join; ///< The rooms that the user has joined
+    QMap<QString, RoomInvite>
+                invite; ///< The rooms that the user has been invited to
+    QVariantMap leave; ///< The rooms that the user has left or been banned from
 };
 
 /**
@@ -260,8 +347,8 @@ class PUBLIC CreateContent : public MatrixObj {
  * @brief Content for an event of type m.room.name
  *
  */
-class PUBLIC NameContent : public MatrixObj {
-    MATRIXOBJ_CONSTRUCTOR(NameContent)
+class PUBLIC RoomNameContent : public MatrixObj {
+    MATRIXOBJ_CONSTRUCTOR(RoomNameContent)
 
   public:
     QString name;
@@ -334,85 +421,6 @@ class PUBLIC StrippedStateEvent : public Event {
     EventContent content;  ///< Required. The content for the event
     QString      stateKey; ///< Required. The state_key for the event
     QString      sender;   ///< Required. The sender for the event
-};
-
-/**
- * @brief A matrix Room object
- *
- */
-class PUBLIC RoomUpdate : public MatrixObj {
-    MATRIXOBJ_CONSTRUCTOR(RoomUpdate)
-
-  public:
-    /**
-     * @brief Information about the room which clients may need to correctly
-       render it to users
-     *
-     */
-    QVariantMap summary;
-
-    /**
-     * @brief Updates to the state, between the time indicated by the since
-       parameter, and the start of the timeline
-     *
-     */
-    QList<StateEvent> state;
-
-    /**
-     * @brief The timeline of messages and state changes in the room
-     *
-     */
-    QVariantMap timeline;
-
-    /**
-     * @brief The ephemeral events in the room that aren't recorded in the
-       timeline or state of the room. e.g. typing
-     *
-     */
-    QList<Event> ephemeral;
-
-    /**
-     * @brief The private data that this user has attached to this room
-     *
-     */
-    QList<Event> accountData;
-
-    /**
-     * @brief Counts of unread notifications for this room
-     *
-     */
-    QVariantMap unreadNotifications;
-};
-
-/**
- * @brief A Room which user has been invited to
- *
- */
-class PUBLIC RoomInvite : public MatrixObj {
-    MATRIXOBJ_CONSTRUCTOR(RoomInvite)
-
-  public:
-    /**
-     * @brief The StrippedState events that form the invite state
-     *
-     */
-    QList<StrippedStateEvent> events;
-};
-
-/**
- * @brief Contains rooms information. Returned on sync request
- *
- */
-class PUBLIC Rooms : public MatrixObj {
-    MATRIXOBJ_CONSTRUCTOR(Rooms)
-
-  public:
-    Rooms(){};
-
-    QMap<QString, RoomUpdate> join; ///< The rooms that the user has joined
-    QMap<QString, RoomInvite>
-                invite; ///< The rooms that the user has been invited to
-    QVariantMap leave; ///< The rooms that the user has left or been banned from
 };
 
 /**
