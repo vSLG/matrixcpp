@@ -43,11 +43,20 @@ class PUBLIC Room : public QObject {
      */
     QString name() const;
 
+    /**
+     * @brief Whether this Room is encrypted or not
+     *
+     * @return true
+     * @return false
+     */
+    bool encrypted() const;
+
     QString               roomId;       ///< This Room's ID
     QMap<QString, User *> users;        ///< Users this Room has
     QMap<QString, User *> invitedUsers; ///< Users invited to this Room
     User *                creator;      ///< The creator of this Room
     bool federate = true; ///< Whether users on other servers can join this Room
+    QString algorithm;    ///< Encryption algorithm used to encrypt messages
 
   protected:
     /**
@@ -81,5 +90,6 @@ class PUBLIC Room : public QObject {
 
   private:
     QString m_name;
+    bool    m_encrypted = false;
 };
 } // namespace MatrixCpp::Types

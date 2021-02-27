@@ -77,6 +77,8 @@ void Event::parseData() {
         this->type = M_ROOM_NAME;
     else if (type == "m.room.create")
         this->type = M_ROOM_CREATE;
+    else if (type == "m.room.encryption")
+        this->type = M_ROOM_ENCRYPTION;
 
     // Ephemeral events
     else if (type == "m.typing")

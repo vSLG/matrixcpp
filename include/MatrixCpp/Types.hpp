@@ -74,11 +74,13 @@ class PUBLIC UnsignedData;
 class PUBLIC EventContent;
 class PUBLIC CreateContent;
 class PUBLIC RoomNameContent;
+class PUBLIC RoomEncryptionContent;
 
 // Events
 class PUBLIC RoomEvent;
 class PUBLIC StateEvent;
 class PUBLIC StrippedStateEvent;
+class PUBLIC RoomEncryptionEvent;
 
 class PUBLIC Room;
 class PUBLIC User;
@@ -246,6 +248,7 @@ class PUBLIC Event : public MatrixObj {
         M_ROOM_MESSAGE,
         M_ROOM_NAME,
         M_ROOM_CREATE,
+        M_ROOM_ENCRYPTION,
 
         // Ephemeral events
         M_TYPING,
@@ -341,6 +344,36 @@ class PUBLIC CreateContent : public MatrixObj {
     // Predecessor fields (optional)
     QString roomId;  ///< The ID of the old room
     QString eventId; ///< The event ID of the last known event in the old room
+};
+
+/**
+ * @brief Content for an event of type m.room.encryption
+ *
+ */
+class PUBLIC RoomEncryptionContent : public MatrixObj {
+    MATRIXOBJ_CONSTRUCTOR(RoomEncryptionContent)
+
+  public:
+    using MatrixObj::MatrixObj;
+
+    /**
+     * @brief Required. The encryption algorithm to be used to encrypt messages
+       sent in this room
+     *
+     */
+    QString algorithm;
+
+    /**
+     * @brief How long the session should be used before changing it
+     *
+     */
+    int rotationPeriod;
+
+    /**
+     * @brief How many messages should be sent before changing the session
+     *
+     */
+    int msgRotationPeriod;
 };
 
 /**

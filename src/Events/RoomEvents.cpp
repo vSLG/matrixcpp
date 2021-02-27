@@ -44,6 +44,20 @@ void EventContent::parseData() {
 }
 
 /*
+ * RoomEncryptionContent
+ */
+
+void RoomEncryptionContent::parseData() {
+    QVariantMap dataMap = this->data.toMap();
+
+    this->algorithm = dataMap["algorithm"].toString();
+    BROKEN(this->algorithm.isEmpty())
+
+    this->rotationPeriod    = dataMap["rotation_period_ms"].toInt();
+    this->msgRotationPeriod = dataMap["rotation_period_msgs"].toInt();
+}
+
+/*
  * NameContent
  */
 

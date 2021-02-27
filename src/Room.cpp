@@ -11,9 +11,18 @@
  *
  */
 
+#include "MatrixCpp/Types.hpp"
 #include <QDebug>
 
 #include <MatrixCpp/Room.hpp>
+
+#define defineContent(type)                                   \
+    type content(event.content);                              \
+    if (content.isBroken()) {                                 \
+        qCritical() << "Error while processing event"         \
+                    << event.data.toMap()["type"].toString(); \
+        return;                                               \
+    }
 
 using namespace MatrixCpp::Types;
 
@@ -36,7 +45,7 @@ void Room::onEvent(RoomEvent event) {
             this->onRoomMemberEvent(event);
             break;
         case Event::M_ROOM_CREATE: {
-            CreateContent content(event.content);
+            defineContent(CreateContent);
 
             if (!this->users.contains(content.creator))
                 this->updateMember(content.creator);
@@ -45,9 +54,24 @@ void Room::onEvent(RoomEvent event) {
             this->federate = content.federate;
             break;
         }
-        case Event::M_ROOM_NAME:
-            this->m_name = ((NameContent) event.content).name;
+        case Event::M_ROOM_NAME: {
+            defineContent(RoomNameContent);
+            this->m_name = content.name;
             break;
+        }
+        case Event::M_ROOM_ENCRYPTION: {
+            defineContent(RoomEncryptionContent);
+
+            // Do not process m.room.encryption again if already processed
+            if (this->m_encrypted)
+                break;
+
+            this->m_encrypted = true;
+            this->algorithm   = content.algorithm;
+            // TODO: rotation period
+            break;
+        }
+
         default:
             qDebug() << __FUNCTION__ << "Implement me:"
                      << event.data.toMap()["type"].toString();
