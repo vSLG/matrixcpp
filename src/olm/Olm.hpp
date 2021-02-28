@@ -18,7 +18,7 @@
 
 #include <MatrixCpp/Client.hpp>
 
-#include "Utils.hpp"
+#include "../Utils.hpp"
 
 #define olm_check_error(function, msg) \
     if (function == olm_error())       \
@@ -88,6 +88,17 @@ class Olm : public QObject, public JsonFile {
      */
     bool shouldUploadOneTimeKeys();
 
+    /**
+     * @brief Tries to decrypt specified ciphertext
+     *
+     * @param ciphertext
+     * @param senderKey sender devic key
+     * @param sessionId Olm session ID if any
+     * @return QString decrypted ciphertext or empty if failed
+     */
+    QString
+    decrypt(QString ciphertext, QString senderKey, QString sessionId = "");
+
     bool deviceKeysUploaded = false; ///< Whether keys have been uploaded or not
     int  uploadedOneTimeKeys =
         -1; ///< Total uploaded one time keys we have track of
@@ -119,5 +130,13 @@ class Olm : public QObject, public JsonFile {
     QString     m_deviceKeys;
     Client *    m_client         = nullptr;
     int         m_maxOneTimeKeys = -1;
+
+    /*
+     * "<sender_key>": {
+     *   <session_id>: <OlmSession>
+     *   ...
+     * }
+     */
+    QMap<QString, QMap<QString, OlmSession *>> m_sessions;
 };
 } // namespace MatrixCpp::Crypto

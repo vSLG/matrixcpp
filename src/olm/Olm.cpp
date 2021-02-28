@@ -51,16 +51,16 @@ QVariant Olm::encode() {
     QVariantHash json;
 
     json["device_keys_uploaded"] = this->deviceKeysUploaded;
+    json["device_keys"] =
+        QJsonDocument::fromJson(this->deviceKeys().toUtf8()).toVariant();
 
-    int         pickledLenght = olm_pickle_account_length(this->m_account);
-    char *      pickled       = (char *) malloc(pickledLenght);
-    std::string key           = this->m_client->accessToken().toStdString();
+    int         pickledSize = olm_pickle_account_length(this->m_account);
+    char *      pickled     = (char *) malloc(pickledSize);
+    std::string key         = this->m_client->accessToken().toStdString();
 
-    if (olm_pickle_account(this->m_account,
-                           key.c_str(),
-                           key.length(),
-                           pickled,
-                           pickledLenght) == olm_error()) {
+    if (olm_pickle_account(
+            this->m_account, key.c_str(), key.length(), pickled, pickledSize) ==
+        olm_error()) {
         emit this->olmError("Failed to pikcle Olm account: " +
                             QString(olm_account_last_error(this->m_account)));
         return QVariant();
@@ -190,6 +190,10 @@ bool Olm::shouldUploadOneTimeKeys() {
     return this->oneTimeKeysToUploadCount() > 0;
 }
 
+QString Olm::decrypt(QString ciphertext, QString senderKey, QString sessionId) {
+    return "";
+}
+
 int Olm::maxOneTimeKeys() {
     if (this->m_maxOneTimeKeys > 0)
         return this->m_maxOneTimeKeys;
@@ -237,7 +241,7 @@ QVariantMap Olm::serializeOneTimeKeys(int count) {
                         this->m_account, count, randomBytes, randomSize),
                     "could not generate one time keys");
 
-    free(randomBytes);
+    free(randomBytes); // Do we need to free this before throwing exception?
 
     int   keysSize = olm_account_one_time_keys_length(this->m_account);
     char *keysStr  = (char *) malloc(keysSize);
@@ -251,7 +255,7 @@ QVariantMap Olm::serializeOneTimeKeys(int count) {
                            .toMap()["curve25519"]
                            .toMap();
 
-    free(keysStr);
+    free(keysStr); // Do we need to free this before throwing exception?
 
     QVariantMap data;
 
