@@ -19,9 +19,12 @@
 
 using namespace MatrixCpp::Crypto;
 
-SessionStore::SessionStore(QString path, QString encryptionKey)
-    : m_key(encryptionKey.toStdString()) {
+SessionStore::SessionStore(QString path, OlmAccount *olm, QString key)
+    : key(key.toStdString()), olm(olm) {
     this->file.setFileName(path);
+}
+
+SessionStore::SessionStore() {
 }
 
 SessionStore::~SessionStore() {
@@ -31,13 +34,24 @@ SessionStore::~SessionStore() {
 }
 
 QMap<QString, OlmSession *> SessionStore::operator[](QString deviceKey) {
+    if (this->file.fileName().isEmpty())
+        throw std::runtime_error("SESSION please set a file name");
+
     // Try to find cached
     if (!this->m_devices[deviceKey].isEmpty())
         return this->m_devices[deviceKey];
 
     // Else try to load from file
-    if (!this->file.open(QFile::ReadOnly))
-        throw std::runtime_error("SESSION could not open store file");
+    if (!this->file.open(QFile::ReadOnly)) {
+        if (!this->file.exists()) {
+            // We cannot throw error when file does not exist, so cache empty
+            // map and return it
+            this->m_devices[deviceKey] = {};
+            return {};
+        } else
+            throw std::runtime_error("SESSION could not open store file: " +
+                                     this->file.errorString().toStdString());
+    }
 
     int        lineNumber = 0;
     QByteArray line;
@@ -56,7 +70,8 @@ QMap<QString, OlmSession *> SessionStore::operator[](QString deviceKey) {
         }
 
         if (!parsed[deviceKey].isNull()) {
-            // Then we found the stored session. Unpickle it, cache and return
+            // Then we found the stored session. Unpickle it, cache and
+            // return
             this->file.close();
             return this->unpickleAndCache(deviceKey, parsed[deviceKey].toMap());
         }
@@ -70,6 +85,9 @@ QMap<QString, OlmSession *> SessionStore::operator[](QString deviceKey) {
 }
 
 void SessionStore::save() {
+    if (this->file.fileName().isEmpty())
+        throw std::runtime_error("SESSION please set a file name");
+
     qDebug() << "SESSION saving";
 
     QFile newFile(this->file.fileName() + ".new");
@@ -119,6 +137,51 @@ void SessionStore::save() {
     newFile.rename(this->file.fileName());
 }
 
+OlmSession *SessionStore::createInbound(QString message, QString deviceKey) {
+    if (this->file.fileName().isEmpty() || this->olm == nullptr)
+        throw std::runtime_error(
+            "SESSION please set a file name and/or an olm account");
+
+    std::string stdMessage(message.toStdString());
+    std::string stdDeviceKey(deviceKey.toStdString());
+    OlmSession *session = olm_session(malloc(olm_session_size()));
+
+    // olm_create_inbound_session_from *might* destoy message buffer.
+    // Documentation is obscure about this, so just in case allocate memory
+    char *msg = (char *) malloc(stdMessage.size());
+    memcpy(msg, stdMessage.c_str(), stdMessage.length());
+
+    if (olm_create_inbound_session_from(session,
+                                        this->olm,
+                                        stdDeviceKey.c_str(),
+                                        stdDeviceKey.length(),
+                                        msg,
+                                        stdMessage.length()) == olm_error())
+        throw std::runtime_error(
+            "SESSION could not create inbound session for " + stdDeviceKey +
+            " (" + olm_session_last_error(session) + ")");
+
+    if (msg)
+        free(msg);
+
+    int   idSize    = olm_session_id_length(session);
+    char *sessionId = (char *) malloc(idSize);
+
+    if (olm_session_id(session, sessionId, idSize) == olm_error()) {
+        throw std::runtime_error("SESSION failed to get session ID for " +
+                                 stdDeviceKey + " (" +
+                                 olm_session_last_error(session) + ")");
+    }
+
+    QString id = sessionId;
+    free(sessionId);
+
+    // Load and store session
+    (*this)[deviceKey][id] = session;
+    this->save();
+    return session;
+}
+
 QMap<QString, OlmSession *>
 SessionStore::unpickleAndCache(QString deviceKey, QVariantMap pickledSessions) {
     QMap<QString, OlmSession *> sessions;
@@ -129,13 +192,14 @@ SessionStore::unpickleAndCache(QString deviceKey, QVariantMap pickledSessions) {
         std::string pickledStr = it.value().toString().toStdString();
 
         // Because olm_unpickle_session destroys pickled buffer, we need to
-        // manually allocate the buffer. We cannot modify std::string internals.
+        // manually allocate the buffer. We cannot modify std::string
+        // internals.
         char *pickled = (char *) malloc(pickledStr.length());
         memcpy(pickled, pickledStr.c_str(), pickledStr.length());
 
         if (olm_unpickle_session(session,
-                                 this->m_key.c_str(),
-                                 this->m_key.length(),
+                                 this->key.c_str(),
+                                 this->key.length(),
                                  pickled,
                                  pickledStr.length()) == olm_error()) {
             qCritical() << "SESSION failed to unpickle session for" << deviceKey
@@ -159,9 +223,9 @@ SessionStore::unpickleAndCache(QString deviceKey, QVariantMap pickledSessions) {
 
         // Check if stored ID matches the calculated ID
         if (it.key() != id) {
-            qWarning()
-                << "SESSION stored ID does not match calculated, replacing for"
-                << deviceKey;
+            qWarning() << "SESSION stored ID does not match calculated, "
+                          "replacing for"
+                       << deviceKey;
         }
 
         sessions[id] = session;
@@ -185,8 +249,8 @@ SessionStore::serializeSessions(QString                     deviceKey,
         char *pickled     = (char *) malloc(pickledSize);
 
         if (olm_pickle_session(session,
-                               this->m_key.c_str(),
-                               this->m_key.length(),
+                               this->key.c_str(),
+                               this->key.length(),
                                pickled,
                                pickledSize) == olm_error())
             throw std::runtime_error("SESSION could not pickle session for " +

@@ -12,8 +12,8 @@
  */
 
 #include <QJsonDocument>
+#include <cstring>
 #include <olm/olm.h>
-#include <qjsondocument.h>
 
 #include "MatrixCpp/Responses.hpp"
 #include "Olm.hpp"
@@ -27,8 +27,9 @@ using namespace MatrixCpp::Utils;
 Olm::Olm(Client *client)
     : QObject(client),
       JsonFile(client->storeDir.filePath(
-          QUrl::toPercentEncoding(client->userId() + ".json"))),
-      m_client(client) {
+          "olm_" + QUrl::toPercentEncoding(client->userId() + "_" +
+                                           client->deviceId + ".json"))),
+      m_client(client), m_key(client->accessToken().toStdString()) {
     this->m_account = olm_account(malloc(olm_account_size()));
 
     connect(this, &Olm::olmError, [=](QString error) {
@@ -41,6 +42,12 @@ Olm::Olm(Client *client)
         this->create();
         this->save();
     }
+
+    this->m_sessions.file.setFileName(client->storeDir.filePath(
+        "sessions_" + QUrl::toPercentEncoding(client->userId() + "_" +
+                                              client->deviceId + ".jsonl")));
+    this->m_sessions.olm = this->m_account;
+    this->m_sessions.key = client->accessToken().toStdString();
 }
 
 Olm::~Olm() {
@@ -54,13 +61,14 @@ QVariant Olm::encode() {
     json["device_keys"] =
         QJsonDocument::fromJson(this->deviceKeys().toUtf8()).toVariant();
 
-    int         pickledSize = olm_pickle_account_length(this->m_account);
-    char *      pickled     = (char *) malloc(pickledSize);
-    std::string key         = this->m_client->accessToken().toStdString();
+    int   pickledSize = olm_pickle_account_length(this->m_account);
+    char *pickled     = (char *) malloc(pickledSize);
 
-    if (olm_pickle_account(
-            this->m_account, key.c_str(), key.length(), pickled, pickledSize) ==
-        olm_error()) {
+    if (olm_pickle_account(this->m_account,
+                           this->m_key.c_str(),
+                           this->m_key.length(),
+                           pickled,
+                           pickledSize) == olm_error()) {
         emit this->olmError("Failed to pikcle Olm account: " +
                             QString(olm_account_last_error(this->m_account)));
         return QVariant();
@@ -95,7 +103,6 @@ void Olm::load() {
 
     this->deviceKeysUploaded = json["device_keys_uploaded"].toBool();
 
-    std::string key        = this->m_client->accessToken().toStdString();
     std::string pickledStr = json["olm"].toString().toStdString();
 
     // Because olm_unpickle_account destroys pickled buffer, we need to manually
@@ -104,8 +111,8 @@ void Olm::load() {
     memcpy(pickled, pickledStr.c_str(), pickledStr.length());
 
     if (olm_unpickle_account(this->m_account,
-                             key.c_str(),
-                             key.length(),
+                             this->m_key.c_str(),
+                             this->m_key.length(),
                              pickled,
                              pickledStr.length()) == olm_error())
         emit this->olmError(QString("OLM Could not load account from disk: %1")
@@ -190,7 +197,47 @@ bool Olm::shouldUploadOneTimeKeys() {
     return this->oneTimeKeysToUploadCount() > 0;
 }
 
-QString Olm::decrypt(QString ciphertext, QString senderKey, QString sessionId) {
+QByteArray Olm::decrypt(QString ciphertext,
+                        QString senderKey,
+                        int     type,
+                        QString sessionId) {
+    QList<OlmSession *> sessions;
+
+    if (this->m_sessions[senderKey].isEmpty())
+        sessions.append(this->m_sessions.createInbound(ciphertext, senderKey));
+    else if (!sessionId.isEmpty() &&
+             this->m_sessions[senderKey].contains(sessionId))
+        sessions.append(this->m_sessions[senderKey][sessionId]);
+    else
+        sessions = this->m_sessions[senderKey].values();
+
+    for (OlmSession *session : sessions) {
+        char *buf = (char *) malloc(ciphertext.length());
+        memcpy(buf, ciphertext.toStdString().c_str(), ciphertext.length());
+
+        int plainSize = olm_decrypt_max_plaintext_length(
+            session, type, buf, ciphertext.length());
+
+        char *plain = (char *) malloc(plainSize);
+        buf         = (char *) malloc(ciphertext.length());
+        memcpy(buf, ciphertext.toStdString().c_str(), ciphertext.length());
+
+        if (olm_decrypt(
+                session, type, buf, ciphertext.length(), plain, plainSize) ==
+            olm_error()) {
+            // Free stuff and try again
+            free(plain);
+            continue;
+        }
+
+        // If we are here, decryption was successful
+        QByteArray decrypted(plain);
+        free(plain);
+        return decrypted;
+    }
+
+    // If we are here, decryption was unsuccessful
+    qDebug("OLM could not decrypt");
     return "";
 }
 

@@ -28,9 +28,12 @@ class SessionStore {
      * @brief Construct a new Session Store object
      *
      * @param path
-     * @param encryptionKey key used to encrypt pickled sessions
+     * @param olm
+     * @param key key used to encrypt pickled sessions
      */
-    explicit SessionStore(QString path, QString encryptionKey = "");
+    explicit SessionStore(QString path, OlmAccount *olm, QString key = "");
+
+    explicit SessionStore();
 
     ~SessionStore();
 
@@ -49,7 +52,18 @@ class SessionStore {
      */
     QMap<QString, OlmSession *> operator[](QString deviceKey);
 
-    QFile file; ///< This is the file the store is saved to
+    /**
+     * @brief Create an inbound session and store it
+     *
+     * @param message
+     * @param deviceKey
+     * @return OlmSession *
+     */
+    OlmSession *createInbound(QString message, QString deviceKey);
+
+    QFile       file; ///< This is the file the store is saved to
+    std::string key;  ///< Key used to encrypt pickled sessions
+    OlmAccount *olm;  ///< Related olm account
 
   private:
     QMap<QString, OlmSession *> unpickleAndCache(QString     deviceKey,
@@ -58,6 +72,5 @@ class SessionStore {
                                                   QMap<QString, OlmSession *> sessions);
 
     QMap<QString, QMap<QString, OlmSession *>> m_devices;
-    std::string                                m_key;
 };
 } // namespace MatrixCpp::Crypto
