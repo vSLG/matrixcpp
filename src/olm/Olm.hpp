@@ -94,7 +94,7 @@ class Olm : public QObject, public JsonFile {
      *
      * @param ciphertext
      * @param senderKey sender devic key
-     * @param int type The type of the message
+     * @param type The type of the message
      * @param sessionId Olm session ID if any
      * @return QByteArray decrypted ciphertext or empty if failed
      */
@@ -102,6 +102,13 @@ class Olm : public QObject, public JsonFile {
                        QString senderKey,
                        int     type,
                        QString sessionId = "");
+
+    /**
+     * @brief Get curve25519 device key
+     *
+     * @return QString
+     */
+    QString curve25519();
 
     bool deviceKeysUploaded = false; ///< Whether keys have been uploaded or not
     int  uploadedOneTimeKeys =
@@ -135,6 +142,7 @@ class Olm : public QObject, public JsonFile {
     Client *    m_client         = nullptr;
     int         m_maxOneTimeKeys = -1;
     std::string m_key;
+    QString     m_curve25519;
 
     SessionStore m_sessions;
 };

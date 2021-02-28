@@ -14,6 +14,7 @@
 #include <QJsonDocument>
 #include <cstring>
 #include <olm/olm.h>
+#include <qjsondocument.h>
 
 #include "MatrixCpp/Responses.hpp"
 #include "Olm.hpp"
@@ -74,7 +75,7 @@ QVariant Olm::encode() {
         return QVariant();
     }
 
-    json["olm"] = pickled;
+    json["olm"] = QByteArray(pickled, pickledSize);
 
     free(pickled);
 
@@ -203,10 +204,18 @@ QByteArray Olm::decrypt(QString ciphertext,
                         QString sessionId) {
     QList<OlmSession *> sessions;
 
-    if (this->m_sessions[senderKey].isEmpty())
-        sessions.append(this->m_sessions.createInbound(ciphertext, senderKey));
-    else if (!sessionId.isEmpty() &&
-             this->m_sessions[senderKey].contains(sessionId))
+    if (this->m_sessions[senderKey].isEmpty()) {
+        OlmSession *session =
+            this->m_sessions.createInbound(ciphertext, senderKey);
+
+        if (!session) {
+            qWarning() << "OLM could not decrypt";
+            return "";
+        }
+
+        this->save();
+    } else if (!sessionId.isEmpty() &&
+               this->m_sessions[senderKey].contains(sessionId))
         sessions.append(this->m_sessions[senderKey][sessionId]);
     else
         sessions = this->m_sessions[senderKey].values();
@@ -231,14 +240,62 @@ QByteArray Olm::decrypt(QString ciphertext,
         }
 
         // If we are here, decryption was successful
-        QByteArray decrypted(plain);
+        QByteArray decrypted(plain, plainSize);
         free(plain);
         return decrypted;
+    }
+
+    // If not decrypted and type == 0, try creating a new session
+    if (type == 0) {
+        OlmSession *session =
+            this->m_sessions.createInbound(ciphertext, senderKey);
+
+        if (!session) {
+            qWarning() << "OLM could not decrypt";
+            return "";
+        }
+
+        this->save();
+
+        // XXX: repeated code
+
+        char *buf = (char *) malloc(ciphertext.length());
+        memcpy(buf, ciphertext.toStdString().c_str(), ciphertext.length());
+
+        int plainSize = olm_decrypt_max_plaintext_length(
+            session, type, buf, ciphertext.length());
+
+        char *plain = (char *) malloc(plainSize);
+        buf         = (char *) malloc(ciphertext.length());
+        memcpy(buf, ciphertext.toStdString().c_str(), ciphertext.length());
+
+        if (olm_decrypt(
+                session, type, buf, ciphertext.length(), plain, plainSize) ==
+            olm_error())
+            // Free stuff and try again
+            free(plain);
+        else {
+            // If we are here, decryption was successful
+            QByteArray decrypted(plain, plainSize);
+            free(plain);
+            return decrypted;
+        }
     }
 
     // If we are here, decryption was unsuccessful
     qDebug("OLM could not decrypt");
     return "";
+}
+
+QString Olm::curve25519() {
+    if (!this->m_curve25519.isEmpty())
+        return this->m_curve25519;
+
+    this->m_curve25519 =
+        QJsonDocument::fromJson(this->deviceKeys().toUtf8())["curve25519"]
+            .toString();
+
+    return this->m_curve25519;
 }
 
 int Olm::maxOneTimeKeys() {

@@ -92,13 +92,16 @@ void SessionStore::save() {
 
     QFile newFile(this->file.fileName() + ".new");
 
-    if (!(this->file.open(QFile::ReadOnly) && newFile.open(QFile::WriteOnly))) {
+    // Open in ReadWrite mode because the file could not exist yet
+    if (!(this->file.open(QFile::ReadWrite) &&
+          newFile.open(QFile::WriteOnly))) {
         this->file.close(); // Can be opened, so close just to make sure
         throw std::runtime_error("SESSION could not open store file");
     }
 
-    int        lineNumber = 0;
-    QByteArray line;
+    QStringList newDevices = this->m_devices.keys();
+    int         lineNumber = 0;
+    QByteArray  line;
 
     while ((line = this->file.readLine()) != "") {
         lineNumber++;
@@ -116,11 +119,13 @@ void SessionStore::save() {
         QString deviceKey(parsed.keys().first());
 
         if (this->m_devices.contains(deviceKey) &&
-            !this->m_devices[deviceKey].isEmpty())
+            !this->m_devices[deviceKey].isEmpty()) {
             // Then update record
             line =
                 this->serializeSessions(deviceKey, this->m_devices[deviceKey]) +
                 "\n";
+            newDevices.removeAll(deviceKey);
+        }
 
         if (newFile.write(line) < 0) {
             this->file.close();
@@ -128,6 +133,19 @@ void SessionStore::save() {
             throw std::runtime_error("SESSION failed to update store file");
         }
     }
+
+    // Add new devices
+    for (QString deviceKey : newDevices) {
+        QByteArray line(
+            this->serializeSessions(deviceKey, this->m_devices[deviceKey]));
+
+        if (newFile.write(line) < 0) {
+            this->file.close();
+            newFile.close();
+            throw std::runtime_error("SESSION failed to update store file");
+        }
+    }
+
     this->file.close();
     newFile.close();
 
@@ -141,6 +159,8 @@ OlmSession *SessionStore::createInbound(QString message, QString deviceKey) {
     if (this->file.fileName().isEmpty() || this->olm == nullptr)
         throw std::runtime_error(
             "SESSION please set a file name and/or an olm account");
+
+    qDebug() << "Creating inbound session for" << deviceKey;
 
     std::string stdMessage(message.toStdString());
     std::string stdDeviceKey(deviceKey.toStdString());
@@ -156,10 +176,16 @@ OlmSession *SessionStore::createInbound(QString message, QString deviceKey) {
                                         stdDeviceKey.c_str(),
                                         stdDeviceKey.length(),
                                         msg,
-                                        stdMessage.length()) == olm_error())
-        throw std::runtime_error(
-            "SESSION could not create inbound session for " + stdDeviceKey +
-            " (" + olm_session_last_error(session) + ")");
+                                        stdMessage.length()) == olm_error()) {
+        qCritical() << "SESSION could not create inbound session for "
+                    << deviceKey << " (" << olm_session_last_error(session)
+                    << ")";
+
+        if (msg)
+            free(msg);
+
+        return nullptr;
+    }
 
     if (msg)
         free(msg);
@@ -168,16 +194,21 @@ OlmSession *SessionStore::createInbound(QString message, QString deviceKey) {
     char *sessionId = (char *) malloc(idSize);
 
     if (olm_session_id(session, sessionId, idSize) == olm_error()) {
-        throw std::runtime_error("SESSION failed to get session ID for " +
-                                 stdDeviceKey + " (" +
-                                 olm_session_last_error(session) + ")");
+        qCritical() << "SESSION failed to get session ID for " << deviceKey
+                    << " (" << olm_session_last_error(session) << ")";
+        free(sessionId);
+        return nullptr;
     }
 
-    QString id = sessionId;
+    QString id = QByteArray(sessionId, idSize);
     free(sessionId);
 
+    // Clear one time keys
+    if (olm_remove_one_time_keys(this->olm, session) == olm_error())
+        qWarning() << "SESSION failed to remove one time keys";
+
     // Load and store session
-    (*this)[deviceKey][id] = session;
+    this->m_devices[deviceKey][id] = session;
     this->save();
     return session;
 }
@@ -218,7 +249,7 @@ SessionStore::unpickleAndCache(QString deviceKey, QVariantMap pickledSessions) {
             return {};
         }
 
-        QString id = sessionId;
+        QString id = QByteArray(sessionId, idSize);
         free(sessionId);
 
         // Check if stored ID matches the calculated ID
@@ -256,7 +287,7 @@ SessionStore::serializeSessions(QString                     deviceKey,
             throw std::runtime_error("SESSION could not pickle session for " +
                                      deviceKey.toStdString());
 
-        pickledSessions[sessionsIt.key()] = pickled;
+        pickledSessions[sessionsIt.key()] = QByteArray(pickled, pickledSize);
         free(pickled);
     }
 
